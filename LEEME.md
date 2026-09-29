@@ -1,0 +1,52 @@
+# Copahue Field Campaign — v8 (prototipo primera persona)
+
+Copia local de la v7 (Sandbox v7 Copy). La v7 original no se toca.
+
+## Cómo correrlo
+- Mac / Ubuntu / Windows: abre una terminal en esta carpeta y ejecuta `python3 -m http.server 8000`
+  (en Windows: `python -m http.server 8000`), luego abre http://localhost:8000 en Chrome, Edge o Safari.
+- Para GitHub Pages: sube toda la carpeta a un repo público y activa Pages (rama main, carpeta /root).
+
+## Estructura
+- index.html: pantalla y estilos
+- libs/: three.js y addons
+- data/data.js: datos científicos (muestras, metagenomas, DEM, fotos)
+- js/world.js: mapa y terreno
+- js/game.js: lógica del juego y cámaras
+
+## Novedades v8
+- A pie: cámara en primera persona (ojos a 0,172, FOV 70, balanceo al caminar). Mouse: click en el juego para mirar, Esc para soltar.
+- En camioneta: cámara externa con anticipación y distancia según velocidad.
+- Tecla V: alterna primera / tercera persona.
+- Barra espaciadora: salto (solo a pie, sin efecto en el juego).
+- Primera persona: se ven manos y brazos al frente; al mirar hacia abajo se ven torso, mochila y pies (solo la cabeza está oculta).
+
+## Novedades v8.1 — equipo 3D en primera persona (js/fpgear.js)
+- Manos 3D con guantes de nitrilo (se ponen solos al llegar al agua o a la mesa); mangas del color de la ropa del personaje.
+- Bidón de 10 L translúcido con nivel de agua, tapa azul y etiqueta del sitio: se ve en la mano al acercarte al agua y al cargarlo.
+- Llenado: te agachas, inclinas el bidón hacia el río, sube el nivel dentro, burbujas y ondas.
+- Sonda multiparamétrica: sonda con guarda de sensores colgando del cable, medidor de mano con pantalla que muestra los valores reales en vivo, marcas verdes a 20 y 45 cm, ondas donde entra al agua y nube de sedimento si tocas fondo.
+- Filtración: mesa 3D con bidón de 20 L (nivel), sifón, embudo graduado, membrana (cambia de color al colmatarse, roja si se rompe), Kitasato con nivel, manómetro de vacío con aguja, bomba manual (kit) o bomba eléctrica (pickup), manguera, crioviales que se llenan (tapa naranja 0,45 · azul 0,22), pinzas. Animaciones al cambiar membrana (R) y vaciar el matraz (F).
+- En primera persona el panel del minijuego queda compacto a la derecha y la cámara mira la mesa/el agua. En tercera persona todo sigue igual que antes.
+- Corregido: la altura de los ojos en primera persona (antes quedaba a ~3 m por un límite de cámara en world.js).
+- v8.2: manómetro grande en la mesa (mira hacia ti, con lectura en bar y aro rojo que parpadea si te pasas) + barra de VACÍO en el panel (verde = 0,35–0,70). Sonda: franja verde más amplia (15–55 cm), se baja y sube más lento y la estabilización se pierde más despacio. En primera persona ya no se ve el cuerpo (las piernas parecían hombros).
+- v8.3 (estabilidad Safari): render con tope de 1080p en pixeles (antes en pantallas retina renderizaba 4-6 MP); la resolución adaptativa espera 6 s entre cambios (antes podía redimensionar y recompilar shaders seguido); cable/manguera/matraz reusan su buffer en la GPU en vez de crear uno por cuadro; aviso y recuperación si se pierde el contexto WebGL.
+- v8.4 (mundo más lindo): cielo en 3D según hacia dónde miras (degradé, resplandor en el horizonte, sol con halo, nubes pintadas que se mueven); ríos con corriente, espuma en la orilla y destellos (el color sigue siendo el del pH medido); nuevo js/fpworld.js con vegetación y suelo alrededor tuyo según el ambiente (coirón y neneo en la estepa, pasto, caña colihue y helechos en el bosque, piedras y escoria roja en altura, costras de azufre y óxido junto a ríos ácidos y fumarolas, flores), cóndores planeando sobre ti, manadas de guanacos que pastan y huyen si te acercas, y auras de luz que marcan las leyendas. Ovejas y zorros culpeo con modelos nuevos.
+- v8.5: ojos a la altura real del personaje (antes la cámara quedaba a media altura, como un niño); las manos y el equipo 3D se ajustan a esa escala. Cuando el personaje hace un show (karaoke, bailes, K-pop, salsa, caídas, magia…) la cámara pasa sola a tercera persona con vista de frente y al terminar vuelve a primera. Lagos con reflejo del cielo y destellos; autos con luces, llantas, patente y conductor; menos caña colihue.
+- v8.6: TODOS los efectos del personaje (pollo, bebidas, cigarro, magia, shows, caídas, PDI…) pasan a tercera persona mientras duran y luego vuelve a primera; los shows con vista de frente. Lo que piensa/dice tu personaje aparece como subtítulo en primera persona. Caballo criollo nuevo (piernas con muslo, rodilla, menudillo y casco; cuello con crin; cabeza con lucero; cola).
+- v8.7: árboles con detalle cerca tuyo (araucarias con verticilos de ramas y follaje, anillos en la corteza; ñirres/lengas con más copa y ramas); vapor suave subiendo de las fumarolas; neblina en los valles bajo ti en la mañana (y con lluvia/nieve); bandurrias en los pastizales que salen volando si te acercas; truchas que saltan en ríos de agua limpia (pH > 5,5); más nubes con mal tiempo. Pensamientos 💭 como subtítulos para los personajes que no tenían frases, según su poder.
+- v8.8: animales rehechos en estilo low-poly facetado con cuerpos modelados (ya no parecen globos): ovejas, chivas con cuernos y barba (antes eran ovejas aplastadas), perros ovejeros, zorro culpeo, guanacos y caballo criollo; todos mueven las patas al caminar.
+- v8.9: se quitó el botón ↕️ "subir HUD" y su opción del código. 14 accesorios aleatorios nuevos (birrete de doctorado, gorro de aviador, sombrero de rana, cuerno de unicornio, hongo, piña, cono, pato de goma, guitarra, alas de mariposa, globo, mochila osito, cámara antigua, poncho a rayas) y a veces un segundo accesorio de cuerpo. Accesorios de manos que se ven en primera persona: reloj, smartwatch, pulseras, pulsera luminosa, elástico, anillos, uñas pintadas, parche curita, tatuaje de estrella y guantes sin dedos (cambian con Nuevo look). Leyendas un 35 % más grandes; cóndor con cuerpo modelado.
+- v8.10: al caminar llevas en la mano libre un objeto de laboratorio al azar (termómetro, matraz Erlenmeyer, vaso precipitado, pipeta Pasteur, micropipeta con punta, tubo de ensayo, tubo Falcon, placa Petri con colonias o cuaderno de laboratorio; cambia con Nuevo look). Ucumar rehecho (gigante peludo con ojos brillantes), Pirepillán rehecha (doncella de hielo con vestido, pelo largo y corona), bandurrias modeladas, luz dorada al amanecer/atardecer y azulada de noche.
+- v8.11: colores de vehículo viridis + turbo; brújula arriba (rumbo, sitio de muestreo 📍 y camioneta 🛻 con distancia); nombre del jugador bajo el minimapa; vista de mapa (M) inclinada y orientada según tu rumbo; objetos, reloj y multiparámetro tomados con el puño (ya no atraviesan la palma); más sensibilidad del mouse; manómetro de filtración arriba junto a la bomba; E/Enter guardan las membranas y Enter aprieta el botón principal de cualquier diálogo; cada membrana se tapa al menos una vez por filtración (salvo Tito y Prisci); bañistas NPC propios con traje de baño, snorkel, flotadores y lentes; baile final al azar (techno, Bollywood, heavy metal, ballet, halay turco, salsa, disco) con música, formaciones y coreografías que cambian, orden aleatorio y solos; estepa andina arriba del lago Caviahue con pocos arbustos, más rocas y azufre; campo de solfataras en Chancho-Có (barro gris hirviendo, costras de azufre, mucho vapor); peces solo cerca de Loncopué y Trolope; bandurrias solo del lago hacia abajo; ovejas con lana suave; Gustavo corre en cualquier dirección y vuelve; Pirepillán con cara visible.
+- v8.12: nuevo LOOK REALISTA (botón 🎬 o tecla O; el cómic queda igual y se puede volver). Inspirado en dgreenheck/tidewater (MIT) pero en WebGL2: materiales PBR con mapa de entorno del cielo, render HDR, sombras suaves (calidad media/alta), terreno con detalle procedural (roca en pendientes, grano), cielo atmosférico con sol y nubes iluminadas, perspectiva aérea, oclusión ambiental, rayos de sol, bloom, tono fílmico ACES, viñeta y grano; lagos y ríos con reflejo de cielo y brillo del sol (color del río sigue siendo el pH). Archivo nuevo js/real.js.
+- v8.13: los nombres de sitios, ríos y lugares se ocultan detrás de montañas (solo se ven con línea directa); el sitio seleccionado se ve siempre. Modo realista: suelo con microrrelieve e iluminación de relieve (estratos y grietas en la roca, grava y piedrecillas en la arena volcánica, briznas en el pasto) y pasto mucho más denso cerca tuyo.
+- v8.14: personajes con cuerpo modelado (caderas, cintura, pecho y hombros; piernas con rodilla y zapatos con forma; brazos que se afinan y mano con pulgar) y cara con nariz, cejas, boca y orejas. Modo realista: los lagos reflejan montañas, árboles y cielo con ondas (calidad media/alta). El mouse queda capturado durante los efectos (pollo, bailes…) y se vuelve a capturar al cerrar una ventana con tecla o clic, para seguir girando en primera persona sin volver a hacer clic.
+- v8.15: Caniche rehecho (cuerpo modelado, lentes y gorra, cara) con melena larga y crespa de rizos en espiral que caen por la espalda, algunas canas, y que rebotan al caminar. Pelo nuevo para todos: largo liso con mechones, medio, crespo largo con rizos en espiral y crespo corto con rulos. Arreglo de fondo: los modelos "loft" (animales y personas) estaban con las caras al revés y se veían huecos/transparentes; ahora son sólidos. Nombres también se ocultan tras árboles y casas. Modo realista: olas en los lagos.
+- v8.16: Optimización. Llamadas de dibujo por cuadro 1257 → ~857 (personas, animales y rulos de Caniche fusionados en una sola malla; bichitos lejanos ocultos). Fuga de memoria arreglada: polvo, espuma del bote, humo, fantasmas, lava, ceniza y bombas liberan la memoria de la tarjeta de video al desaparecer.
+- Respaldo de antes de este cambio: ../_respaldos/copahue-v8_antes-equipo3D/
+
+## Pendiente
+- Ángulos de cine para sismo, erupción y llegada a la base.
+- Mejora visual (cielo, agua, vegetación, post-proceso) con tope 1080p.
+- Pruebas en M5 Air y NVIDIA.
