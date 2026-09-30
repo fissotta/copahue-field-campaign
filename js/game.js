@@ -487,21 +487,33 @@ BODY_ACC.push(
 );
 // hand accessories: only visible up close, i.e. in first person (js/fpgear.js draws them)
 const HAND_ACC=['watch','smartwatch','bracelets','rings','nails','bandaid','tattoo','glowband','rubberband','fingerless'];
-function rollHands(){const n=Math.random()<.2?0:1+Math.floor(Math.random()*3),out=[];const pool=HAND_ACC.slice();for(let i=0;i<n;i++){const k=pool.splice(Math.floor(Math.random()*pool.length),1)[0];out.push({k,c:pick(NEON),side:Math.random()<.5?1:-1});}
+const TECH_HANDS=[0,4,14,17];  // Abraham, Camila, Issotta, Pedro: computer people, they carry a mouse or a keyboard instead of lab gear
+// third-person version of the held mouse / keyboard (cartoon-sized so it reads from the game camera)
+function addTechProp(g){const it=(g.userData.hands||[]).find(h=>h.k==='lab'&&(h.item==='mouse'||h.item==='keyboard'));const u=g.userData;if(!it||!u.armR||u.tech)return;
+  const p=new THREE.Group();p.position.set(.006,-.07,-.008);p.scale.setScalar(1.45);p.rotation.x=.25;u.armR.add(p);u.tech=p;  // a bit bigger and held away from the leg so it reads from the game camera
+  const c=new THREE.Color(it.c),hsl={};c.getHSL(hsl);const col=hsl.l<.3||hsl.l>.85?pick(['#ff2d95','#3a86ff','#7cff4f','#ffd23f','#00e5ff','#ff7b00']):it.c;  // dark or white props vanish against clothes: use a bright one
+  if(it.item==='mouse'){const m=AM(new THREE.SphereGeometry(.011,12,8),col,0,-.012,0,p);m.scale.set(1.5,.8,1);AM(new THREE.BoxGeometry(.0015,.004,.004),'#3a3d44',.008,-.004,0,p);
+    AM(new THREE.CylinderGeometry(.0006,.0006,.03,4),'#2a2a30',-.004,.006,0,p);}
+  else{const L=.05+Math.random()*.02;AM(new THREE.BoxGeometry(.006,L,.024),col,.004,-L/2+.004,0,p);const cap=pick(['#2a2a30','#f4f0e6','#e8dcc0']);
+    [-1,1].forEach(s=>{for(let r=0;r<4;r++)AM(new THREE.BoxGeometry(.0016,L-.008,.0035),Math.random()<.2?pick(NEON):cap,.004+s*.0034,-L/2+.004,-.008+r*.0055,p);});}
+  return p;}
+function rollHands(ci){const n=Math.random()<.2?0:1+Math.floor(Math.random()*3),out=[];const pool=HAND_ACC.slice();for(let i=0;i<n;i++){const k=pool.splice(Math.floor(Math.random()*pool.length),1)[0];out.push({k,c:pick(NEON),side:Math.random()<.5?1:-1});}
+  if(TECH_HANDS.includes(ci)){out.push({k:'lab',item:pick(['mouse','keyboard']),c:pick(['#1d1a2b','#f4f0e6','#d9dde3','#ff2d95','#3a86ff','#7cff4f','#ffd23f','#b15cff','#e8dcc0','#ff7b00'])});return out;}
   if(Math.random()<.8)out.push({k:'lab',item:pick(['thermometer','erlenmeyer','beaker','pasteur','micropipette','testtube','falcon','petri','notebook']),c:pick(['#7cff4f','#3a86ff','#ff2d95','#ffd23f','#00e5ff','#b15cff'])});  // lab gear held in a free hand
   return out;}
 const FEET_ACC=[['Diving flippers',g=>{const u=g.userData;[u.legL,u.legR].forEach(l=>AM(new THREE.BoxGeometry(.05,.003,.022),pick(['#00e5ff','#7cff4f','#ff2d95']),.022,-.074,0,l));}],
  ['Bunny slippers',g=>{const u=g.userData;[u.legL,u.legR].forEach(l=>{AM(new THREE.SphereGeometry(.011,8,6),'#ffffff',.006,-.068,0,l).scale.set(1.4,.8,1);[-1,1].forEach(s=>AM(new THREE.BoxGeometry(.003,.014,.004),'#ffffff',-.002,-.058,.004*s,l));});}]];
 function swimBasic(g){const u=g.userData,sk=Wd.toon(u.cfg.skin),c=pick(['#1d3557','#2a2a30','#8a1c2b','#2e5e4e','#3a86ff']);[u.legL,u.legR].forEach(l=>{l.material=sk;AM(new THREE.CylinderGeometry(.012,.012,.026,8).translate(0,-.01,0),c,0,0,0,l);});}
-function rollAccessories(g){
+function rollAccessories(g,reroll){  // reroll: a new random look (L / 🎲); a character's first look never gets the knight shield (it reads as a Bible)
+  const BA=reroll?BODY_ACC:BODY_ACC.filter(b=>b[0]!=='Knight shield');
   g.userData.anim=g.userData.anim||[];const names=[];
   const swim=Math.random()<.18;
   if(swim){swimKit(g);names.push('Swim kit (board shorts, floaties & flippers)');if(Math.random()<.5){HEAD_ACC.find(h=>h[0]==='Snorkel mask')[1](g);names.push('Snorkel mask');}else{const h=pick(HEAD_ACC.filter(h=>h[0]!=='Snorkel mask'));h[1](g);names.push(h[0]);}return names;}
   const h=pick(HEAD_ACC);h[1](g);names.push(h[0]);
-  if(Math.random()<.75){const b=pick(BODY_ACC);b[1](g);names.push(b[0]);}
+  if(Math.random()<.75){const b=pick(BA);b[1](g);names.push(b[0]);}
   if(Math.random()<.25){const f=pick(FEET_ACC);f[1](g);names.push(f[0]);}
-  if(Math.random()<.35){const b=pick(BODY_ACC.filter(b=>!names.includes(b[0])));b[1](g);names.push(b[0]);}  // sometimes a second body accessory
-  g.userData.hands=rollHands();
+  if(Math.random()<.35){const b=pick(BA.filter(b=>!names.includes(b[0])));b[1](g);names.push(b[0]);}  // sometimes a second body accessory
+  g.userData.hands=rollHands(CHARS.indexOf(g.userData.cfg));addTechProp(g);
   return names;
 }
 
@@ -512,8 +524,8 @@ function addHeadlamp(g){const h=new THREE.Group();h.position.set(.0,.184,0);
   const glow=new THREE.Mesh(new THREE.SphereGeometry(.009,8,6),new THREE.MeshBasicMaterial({color:0xfff6d0,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}));glow.position.x=.024;h.add(glow);
   const beam=new THREE.Mesh(new THREE.ConeGeometry(.045,.26,14,1,true).rotateZ(Math.PI/2).translate(.13,0,0).rotateZ(-.42),new THREE.MeshBasicMaterial({color:0xfff2c0,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}));beam.position.x=.023;h.add(beam);
   glow.visible=beam.visible=false;g.add(h);g.userData.hl={beam,glow,bulb};}
-function setCharacter(i,silent){
-  charIdx=i;saveChars();if(!pl.g)return;const old=pl.g;const n=makePerson(CHARS[i]);const look=rollAccessories(n);addHeadlamp(n);n.position.copy(old.position);n.rotation.copy(old.rotation);Wd.scene.remove(old);Wd.scene.add(n);pl.g=n;PK.onChar(silent);
+function setCharacter(i,silent,reroll){
+  charIdx=i;saveChars();if(!pl.g)return;const old=pl.g;const n=makePerson(CHARS[i]);const look=rollAccessories(n,reroll);addHeadlamp(n);n.position.copy(old.position);n.rotation.copy(old.rotation);Wd.scene.remove(old);Wd.scene.add(n);pl.g=n;PK.onChar(silent);
   if(!silent){toast(`👤 Now playing as <b>${esc(charNames[i])}</b><br>🎲 Today's look: <b>${look.join(' + ')}</b>${PK.desc()?'<br>✨ '+PK.desc():''}`,false,PK.desc()?6500:3600);AU.sfx.voice(5,CHARS[i].f?210:130);}
 }
 function openPicker(after){
@@ -622,7 +634,7 @@ function buildBoat(){
   // scientists aboard: Pedro (grey hair, plaid shirt) and Sofi (long curly hair, gold hoops), both in white lab coats
   [[{skin:'#e8b89a',hair:'#b8b8b4',style:'short',top:'#6d6a8a',jacket:'#f7f7f4',coat:1,pants:'#2a2e38',shoes:'#3a2a20',h:1.03},-.01,-.012,0],
    [{skin:'#e3ae8c',hair:'#1e1410',style:'longCurly',hoops:1,top:'#d9c6a0',jacket:'#f7f7f4',coat:1,pants:'#2a2a30',shoes:'#222',h:.96},.045,.012,-.6]].forEach(([cfg,x,z,ry])=>{
-    const p=makePerson(cfg);p.scale.setScalar(.95);p.position.set(x,.02,z);p.rotation.y=ry;hull.add(p);BOAT.crew.push(p);});
+    const p=makePerson(cfg);p.scale.setScalar(.6);p.position.set(x,.02,z);p.rotation.y=ry;hull.add(p);BOAT.crew.push(p);});
   g.scale.setScalar(2.4);Wd.scene.add(g);BOAT.g=g;BOAT.hull=hull;
   const p0=BOAT.pts[Math.floor(Math.random()*BOAT.pts.length)];BOAT.x=p0[0];BOAT.z=p0[1];
   const c=document.createElement('canvas');c.width=c.height=32;const cx=c.getContext('2d');cx.fillStyle='#fff';cx.beginPath();cx.arc(16,16,14,0,6.3);cx.fill();BOAT.ftex=new THREE.CanvasTexture(c);
@@ -1012,6 +1024,9 @@ function resetPositions(){
   const i=roadPts.findIndex(p=>Math.hypot(p[0]-base.x,p[1]-base.z)<.5);const a=roadPts[Math.max(0,i)],b=roadPts[Math.min(roadPts.length-1,Math.max(0,i)+3)];
   truck.x=a[0];truck.z=a[1];truck.yaw=Math.atan2(-(b[1]-a[1]),b[0]-a[0])+Math.PI;truck.speed=0;
   {const d=Math.hypot(truck.x-base.x,truck.z-base.z);if(d<.7){const k=(.75-d)/(d||1);truck.x+=(truck.x-base.x)*k;truck.z+=(truck.z-base.z)*k;}}
+  if(truckInRiver()){  // pushed off the base onto the Río Agrio: park on the nearest dry stretch of road instead, or you can't get out
+    const c=roadPts.map((p,j)=>[p,j]).filter(([p])=>Math.hypot(p[0]-base.x,p[1]-base.z)>=.7).sort((u,v)=>Math.hypot(u[0][0]-base.x,u[0][1]-base.z)-Math.hypot(v[0][0]-base.x,v[0][1]-base.z));
+    for(const [p,j] of c.slice(0,80)){const q=roadPts[Math.min(roadPts.length-1,j+3)];truck.x=p[0];truck.z=p[1];truck.yaw=Math.atan2(-(q[1]-p[1]),q[0]-p[0])+Math.PI;if(!truckInRiver())break;}}
   pl.inTruck=true;pl.x=truck.x;pl.z=truck.z;pl.carry=0;cam.yaw=truck.yaw;
 }
 function mkLabel(html,cls){const el=document.createElement('div');el.className=cls;el.innerHTML=html;labelsEl.appendChild(el);return el;}
@@ -1024,7 +1039,7 @@ function bindInput(){
   const ai=()=>AU.init();addEventListener('pointerdown',ai,true);addEventListener('keydown',ai,true);
   $('#g-lang').onclick=e=>{e.stopPropagation();setLang(LANG==='es'?'en':'es');};
   $('#g-exp').onclick=e=>{e.stopPropagation();enterExplore();};$('#g-back').onclick=e=>{e.stopPropagation();exitExplore();};
-  $('#g-look').onclick=e=>{e.stopPropagation();if(mode==='play'&&!modal)setCharacter(charIdx);};
+  $('#g-look').onclick=e=>{e.stopPropagation();if(mode==='play'&&!modal)setCharacter(charIdx,false,true);};
   $('#g-chr').onclick=e=>{e.stopPropagation();if(mode==='play'&&!modal)openPicker();};
   const sb=$('#g-snd');sb.onclick=e=>{e.stopPropagation();AU.init();AU.setLevel((AU.level+2)%3);sb.textContent=SND_LBL[AU.level];};sb.textContent=SND_LBL[AU.level];
   addEventListener('keydown',e=>{
@@ -1036,7 +1051,7 @@ function bindInput(){
     if(modal){if(e.code==='Escape'&&modal.close!==false){closeModal();return;}if(modal.key)modal.key(e.code);return;}
     if(mode!=='play')return;
     if(e.code==='KeyE')act('E');else if(e.code==='KeyQ')act('Q');else if(e.code==='KeyM'&&e.shiftKey)enterExplore();else if(e.code==='KeyM')cam.map=!cam.map;else if(e.code==='Space'){doJump();}else if(e.code==='KeyV'){cam.fp=!cam.fp;cam.fpPitch=0;toast(cam.fp?LX(' First-person view <kbd>V</kbd> to switch',' Vista en primera persona <kbd>V</kbd> para cambiar'):LX(' Third-person view <kbd>V</kbd> to switch',' Vista en tercera persona <kbd>V</kbd> para cambiar'),false,1800);}else if(e.code==='KeyC'){cam.dragYaw=0;cam.dragPitch=0;cam.zoom=1;}
-    else if(e.code==='KeyJ'||e.code==='Tab')$('#g-mis').classList.toggle('min');else if(e.code==='KeyH')showHelp();else if(e.code==='KeyN')nextTarget();else if(e.code==='KeyP')setCharacter((charIdx+1)%CHARS.length);else if(e.code==='KeyL')setCharacter(charIdx);else if(e.code==='KeyU')$('#g-snd').click();else if(e.code==='KeyB'&&pl.inTruck)AU.sfx.horn();
+    else if(e.code==='KeyJ'||e.code==='Tab')$('#g-mis').classList.toggle('min');else if(e.code==='KeyH')showHelp();else if(e.code==='KeyN')nextTarget();else if(e.code==='KeyP')setCharacter((charIdx+1)%CHARS.length);else if(e.code==='KeyL')setCharacter(charIdx,false,true);else if(e.code==='KeyU')$('#g-snd').click();else if(e.code==='KeyB'&&pl.inTruck)AU.sfx.horn();
   });
   addEventListener('keyup',e=>{keys[e.code]=false;});
   addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
@@ -1119,6 +1134,27 @@ function tailgate(){return [truck.x-Math.cos(truck.yaw)*.24,truck.z+Math.sin(tru
 function act(k){
   if(!ctx||PK.freeze())return;const a=k==='E'?ctx.E:ctx.Q;if(!a||a.hold||a.info)return;a.f&&a.f();
 }
+// ------------------------------------------------------------ falling off the edge of the world: a few seconds in the void, then you drop back in near the start (progress kept)
+let FALL=null;
+function offEdge(x,z,m){return x<Wd.X0+m||x>Wd.X1-m||z<Wd.Z0+m||z>Wd.Z1-m;}
+function startFall(inTruck,vx,vz){if(FALL)return;const o=inTruck?truck.g:pl.g;const sp=Math.hypot(vx,vz);if(sp<.45){const k=.45/(sp||1);vx=(vx||(pl.x<(Wd.X0+Wd.X1)/2?-1:1))*k;vz*=k;}
+  FALL={ph:'void',t:0,truck:inTruck,vx,vz,vy:.35,x:o.position.x,y:o.position.y,z:o.position.z,spin:(Math.random()-.5)*4};
+  const C=Wd.camera.position.clone(),F=FALL;lookCine(9,()=>C,()=>new THREE.Vector3(F.x,F.y,F.z));
+  PK._say&&PK._say(pk2([LX('Aaaaaaah!','¡Aaaaaaah!'),LX('Nooooo… the edge!','¡Nooooo… el borde!'),LX('Where did the map go?!','¡¿Dónde se fue el mapa?!')]),2.6);try{AU.sfx.skid();}catch(_){}}
+const pk2=a=>a[Math.floor(Math.random()*a.length)];
+function fallTick(dt,t){const F=FALL;if(!F)return;F.t+=dt;const o=F.truck?truck.g:pl.g;
+  F.vy-=2.6*dt;F.x+=F.vx*dt;F.z+=F.vz*dt;F.y+=F.vy*dt;o.position.set(F.x,F.y,F.z);
+  const yw=F.truck?truck.yaw:pl.yaw;if(F.truck)o.rotation.set(F.spin*F.t*.25,yw,F.spin*F.t*.4);else{o.rotation.set(0,yw,F.spin*F.t);const u=o.userData;if(u.armL){u.armL.rotation.z=-2.6+Math.sin(t*20)*.5;u.armR.rotation.z=-2.6+Math.cos(t*19)*.5;u.legL.rotation.z=Math.sin(t*16)*.7;u.legR.rotation.z=-Math.sin(t*16)*.7;}}
+  if(F.ph==='void'&&F.t>2.6)respawnFall();
+  else if(F.ph==='drop'){if(F.y<=F.g){o.position.y=F.g;o.rotation.set(0,F.truck?truck.yaw:pl.yaw,0);if(!F.truck)o.rotation.z=0;
+    puff(F.x,F.z);puff(F.x+.05,F.z-.04);try{AU.sfx.stamp();}catch(_){}EV.cine=null;FALL=null;pl.jy=0;pl.jv=0;
+    toast(LX('🕳️ You fell off the edge of the world… and landed back near the MEL Field Base. Your samples are safe.','🕳️ Te caíste por el borde del mundo… y aterrizaste de vuelta cerca de la base MEL. Tus muestras están a salvo.'),false,4200);
+    try{window.__XA.unlock('void');}catch(_){}save();}}}
+function respawnFall(){const F=FALL,carry=pl.carry;resetPositions();pl.carry=carry;
+  if(!F.truck||carry>0){pl.inTruck=false;const a=truck.yaw+Math.PI/2;let x=truck.x+Math.cos(a)*.3,z=truck.z-Math.sin(a)*.3;if(!walkable(x,z)){x=truck.x-Math.cos(a)*.3;z=truck.z+Math.sin(a)*.3;}if(!walkable(x,z)){x=base.x+.3;z=base.z;}pl.x=x;pl.z=z;pl.yaw=truck.yaw;F.truck=false;}
+  truck.g.rotation.set(0,truck.yaw,0);truck.g.position.set(truck.x,Wd.heightAt(truck.x,truck.z),truck.z);
+  F.ph='drop';F.x=F.truck?truck.x:pl.x;F.z=F.truck?truck.z:pl.z;F.g=Wd.heightAt(F.x,F.z)-(F.truck?.012:0);F.y=F.g+2.2;F.vx=F.vz=0;F.vy=0;F.spin*=.5;
+  const c=new THREE.Vector3(F.x+.9,F.g+.55,F.z+.9);EV.cine={t:0,dur:9,posFn:()=>c,tgtFn:()=>new THREE.Vector3(F.x,Math.max(F.y,F.g)+.1,F.z)};Wd.camera.position.copy(c);}
 function exitTruck(){
   if(truckInRiver()){warnOnce(LX('🌊 Don\'t park in the river! Drive onto the bank first.','🌊 ¡No estaciones en el río! Sube primero a la orilla.'));return;}
   // step out on the left side
@@ -1158,7 +1194,8 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
   // ---------- speech bubbles
   const mkBub=bg=>{const b=mkLabel('','glbl');b.style.maxWidth='250px';b.style.whiteSpace='normal';b.style.font="700 14px/1.2 'Comic Neue',sans-serif";b.style.background=bg||'#fff';b.style.display='none';b.style.zIndex='3';return b;};
   let bub=null,bubT=0;
-  function say(html,secs=3.5){if(!bub)bub=mkBub();bub.innerHTML=html;bubT=secs;}
+  function say(html,secs=3.5){if(!bub)bub=mkBub();bub.innerHTML=html;bubT=secs;ps.q=0;}
+  const hush=()=>(ps.q||0)<15;  // ambient chatter (talkers, thoughts, animals) waits at least 15 s after anything the character said
   const NB=[];
   function npcSay(html,pos,secs=4){const b=mkBub('#fff3c4');b.innerHTML=html;const p=typeof pos==='function'?pos:()=>pos;NB.push({el:b,p,t:secs});}
   // ---------- audio bits
@@ -1279,9 +1316,20 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
     caniche:[L2('Che, there are no seals up here, but there are guanacos.','Che, acá arriba no hay focas, pero hay guanacos.'),L2('Seals? I take you to the crater, not to Península Valdés.','¿Focas? Yo te llevo al cráter, no a Península Valdés.')],
     boat:[L2('Sofi?! But Sofi is right here on the boat with me!','¡¿Sofi?! ¡Pero si Sofi está aquí en el bote conmigo!'),L2('If I see a seal in the lake I will let you know!','¡Si veo una foca en el lago te aviso!')]};
   const PAPERS=[[L2('Acidithiobacillus and me: an acidic love story','Acidithiobacillus y yo: una historia de amor ácido'),L2('Why is the Río Agrio sour? (Spoiler: the volcano)','¿Por qué el Río Agrio es agrio? (Spoiler: el volcán)'),L2('Metagenomics of jerrycans forgotten in the truck','Metagenómica de bidones olvidados en la camioneta'),
-      L2('Effect of mate on 0.22 µm filtration efficiency','Efecto del mate en la eficiencia de filtración a 0,22 µm'),L2('Ferrovum: the microbe nobody invited but always shows up','Ferrovum: el microbio que nadie invitó pero siempre llega'),L2('pH 1 and other ways to lose a glove','pH 1 y otras formas de perder un guante'),L2('New high-quality MAGs of questionable origin','Nuevos MAGs de alta calidad y dudosa procedencia')],
-    [L2('Counting 10⁶ cells by hand (and other youthful mistakes)','Conteo manual de 10⁶ células (y otros errores de juventud)'),L2('Characterisation of the mud in the parking lot','Caracterización del barro del estacionamiento'),L2('Is the Copahue hot? A preliminary study','¿Está caliente el Copahue? Un estudio preliminar')],
-    [L2('Microbial ecophysiology of the Caviahue–Copahue system (Vol. I of VII)','Ecofisiología microbiana del sistema Caviahue–Copahue (Vol. I de VII)'),L2('Towards a unified theory of clogged membranes','Hacia una teoría unificada de las membranas tapadas'),L2('Archaea, sulfur and six years of my life','Arqueas, azufre y seis años de mi vida')]];
+      L2('Effect of mate on 0.22 µm filtration efficiency','Efecto del mate en la eficiencia de filtración a 0,22 µm'),L2('Ferrovum: the microbe nobody invited but always shows up','Ferrovum: el microbio que nadie invitó pero siempre llega'),L2('pH 1 and other ways to lose a glove','pH 1 y otras formas de perder un guante'),L2('New high-quality MAGs of questionable origin','Nuevos MAGs de alta calidad y dudosa procedencia'),
+      L2('Reviewer 2 is an extremophile: evidence from 14 rejections','El revisor 2 es un extremófilo: evidencia de 14 rechazos'),L2('Leptospirillum does not answer e-mails','Leptospirillum no contesta los correos'),
+      L2('16S or not 16S: that is the question','16S o no 16S: esa es la cuestión'),L2('Sulfur, sweat and a broken Niskin bottle','Azufre, sudor y una botella Niskin rota'),
+      L2('Rotifers of Lake Caviahue: a love letter','Rotíferos del Lago Caviahue: una carta de amor'),L2('Horizontal gene transfer between me and my coffee cup','Transferencia horizontal de genes entre mi taza de café y yo'),
+      L2('On the impossibility of labelling a Falcon tube with gloves on','Sobre la imposibilidad de rotular un Falcon con guantes puestos'),L2('Iron-oxidizers at dawn: a sleepless sampling protocol','Ferrooxidantes al amanecer: un protocolo de muestreo sin dormir'),
+      L2('Supplementary Table S47 (the one nobody opens)','Tabla Suplementaria S47 (la que nadie abre)'),L2('Che, where is my sample? A spatial analysis','Che, ¿dónde está mi muestra? Un análisis espacial')],
+    [L2('Counting 10⁶ cells by hand (and other youthful mistakes)','Conteo manual de 10⁶ células (y otros errores de juventud)'),L2('Characterisation of the mud in the parking lot','Caracterización del barro del estacionamiento'),L2('Is the Copahue hot? A preliminary study','¿Está caliente el Copahue? Un estudio preliminar'),
+      L2('How many jerrycans fit in a pickup? An experimental approach','¿Cuántos bidones caben en una camioneta? Un enfoque experimental'),L2('Autoclave queue times in a shared lab','Tiempos de espera del autoclave en un laboratorio compartido'),
+      L2('The pH strip changed colour: now what?','La tira de pH cambió de color: ¿y ahora qué?'),L2('Culture media I forgot in the incubator (2019–2024)','Medios de cultivo que olvidé en la incubadora (2019–2024)'),
+      L2('Descriptive statistics of lost pipette tips','Estadística descriptiva de puntas de pipeta perdidas')],
+    [L2('Microbial ecophysiology of the Caviahue–Copahue system (Vol. I of VII)','Ecofisiología microbiana del sistema Caviahue–Copahue (Vol. I de VII)'),L2('Towards a unified theory of clogged membranes','Hacia una teoría unificada de las membranas tapadas'),L2('Archaea, sulfur and six years of my life','Arqueas, azufre y seis años de mi vida'),
+      L2('Life at pH 2: microbes, mate and resilience in the Andes','La vida a pH 2: microbios, mate y resiliencia en los Andes'),L2('Metagenomes of the Río Agrio and the author\'s mental health','Metagenomas del Río Agrio y la salud mental de la autora'),
+      L2('From Buenos Aires to the crater: a thesis in 412 figures','De Buenos Aires al cráter: una tesis en 412 figuras'),L2('Chapter 5 will be ready soon: a longitudinal study','El capítulo 5 ya casi está: un estudio longitudinal'),
+      L2('Extremophiles, extreme deadlines','Extremófilos, plazos extremos')]];
   const PTYPE=[L2('📄 Paper','📄 Paper'),L2('📘 Undergrad thesis','📘 Tesis de pregrado'),L2('📕 PhD thesis','📕 Tesis de doctorado')];
   // ---------- actions
   function start(k,dur,extra){ps.act=Object.assign({k,t:0,dur,yaw:pl.yaw,g:pl.g,said:{}},extra||{});const A=ps.act,u=pl.g.userData;
@@ -1362,10 +1410,10 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
   // ---------- Raquel: drops papers and theses
   const PAP=[];
   function raquel(dt){if(pl.inTruck){ps.lx=null;return;}if(ps.lx===null){ps.lx=pl.x;ps.lz=pl.z;return;}const d=Math.hypot(pl.x-ps.lx,pl.z-ps.lz);ps.lx=pl.x;ps.lz=pl.z;if(d>.3)return;ps.dist+=d;
-    if(ps.dist<ps.every)return;ps.dist=0;ps.every=R(1,1.7);const r=Math.random(),kind=r<.55?0:r<.85?1:2;const g=paperModel(kind);const x=pl.x-Math.cos(pl.yaw)*.05,z=pl.z+Math.sin(pl.yaw)*.05;g.position.set(x,Wd.heightAt(x,z)+.002,z);g.rotation.y=Math.random()*6.28;Wd.scene.add(g);
+    if(ps.dist<ps.every)return;ps.dist=0;ps.every=R(3,5);const r=Math.random(),kind=r<.55?0:r<.85?1:2;const g=paperModel(kind);const x=pl.x-Math.cos(pl.yaw)*.05,z=pl.z+Math.sin(pl.yaw)*.05;g.position.set(x,Wd.heightAt(x,z)+.002,z);g.rotation.y=Math.random()*6.28;Wd.scene.add(g);
     PAP.push(g);if(PAP.length>30)Wd.scene.remove(PAP.shift());AU.sfx.click();
     npcSay(`${PTYPE[kind]()}<br><i>“${pk(PAPERS[kind])()}”</i>`,[x,Wd.heightAt(x,z)+.14,z],3.4);
-    if(Math.random()<.35)say(pk([LX('Oops, another one…','Uy, se me cayó otro…'),LX('Cite me! 📚','¡Cítenme! 📚'),LX('That one was peer-reviewed, che.','Ese estaba revisado por pares, che.')]),2);}
+    if(Math.random()<.35&&!hush())say(pk([LX('Oops, another one…','Uy, se me cayó otro…'),LX('Cite me! 📚','¡Cítenme! 📚'),LX('That one was peer-reviewed, che.','Ese estaba revisado por pares, che.')]),2);}
   // ---------- Tito: magic compass
   let cmp=null;const trail=[];
   function compass(t){if(!cmp){cmp=compassModel();Wd.scene.add(cmp);for(let i=0;i<9;i++){const s=new THREE.Mesh(new THREE.OctahedronGeometry(.022),new THREE.MeshBasicMaterial({color:i%2?0xff2d95:0xffd23f,transparent:true,opacity:.9}));Wd.scene.add(s);trail.push(s);}}
@@ -1377,7 +1425,7 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
   function compassOff(){if(cmp){cmp.visible=false;trail.forEach(s=>s.visible=false);}}
   // ---------- Pedro: Camila appears by magic and follows him
   const comp={g:null,on:false,x:0,z:0,yaw:0,ph:0,dance:0,d0:0,next:R(40,55),call:-99};
-  function compMake(){if(comp.g)return;comp.g=makePerson(CHARS[4]);comp.g.visible=false;Wd.scene.add(comp.g);}
+  function compMake(){if(comp.g)return;comp.g=makePerson(CHARS[4]);comp.g.userData.hands=rollHands(4);addTechProp(comp.g);comp.g.visible=false;Wd.scene.add(comp.g);}
   function compRemove(){if(!comp.g)return;Wd.scene.remove(comp.g);comp.g=null;comp.on=false;comp.dance=0;}
   function compSlot(){return [pl.x-Math.cos(pl.yaw)*.03+Math.sin(pl.yaw)*.17,pl.z+Math.sin(pl.yaw)*.03+Math.cos(pl.yaw)*.17];}
   function onExit(){if(!is('pedro'))return;compMake();const [x,z]=compSlot();comp.x=x;comp.z=z;comp.yaw=pl.yaw;const y=Wd.heightAt(x,z);spark(x,y+.15,z,26,undefined,.6,1.3);
@@ -1404,15 +1452,39 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
     else{u.armL.rotation.z=2.4+s*.3;u.armR.rotation.z=2.4-s*.3;u.armL.rotation.x=.35;u.armR.rotation.x=-.35;rx=s*.2;u.legL.rotation.z=s*.35;u.legR.rotation.z=-s*.35;}
     g.position.y=y;g.rotation.set(rx,ry,0);}
   // ---------- Argentines: che, che, che
-  function cheCaniche(){if(!isArg())return false;
-    const you=pk([LX('Che, Caniche! All good, che?','¡Che, Caniche! ¿Todo bien, che?'),LX('Che, che, che… which way to the crater, che?','Che, che, che… ¿pa\' dónde queda el cráter, che?'),LX('Che, Caniche, got any mate, che?','Che, Caniche, ¿tenés un mate, che?')]);
-    const rep=pk([LX('Che, che, che! What\'s up, che! This way, che, follow me, che.','¡Che, che, che! ¡Qué hacés, che! Por acá, che, seguime, che.'),LX('Che, look, che: the crater is right there, che. Che.','Che, mirá, che: el cráter está ahí nomás, che. Che.'),LX('Mate? Of course, che! Che, che, sweet or bitter, che?','¿Mate? ¡Obvio, che! Che, che, ¿dulce o amargo, che?'),LX('Che, che… careful with the fumarole, che!','Che, che… ¡cuidado con la fumarola, che!')]);
-    toast(`<b>${LX('YOU','TÚ')}:</b> ${you}`,false,3000);AU.sfx.voice(6,CHARS[charIdx].f?225:140);say(you,2.8);
-    setTimeout(()=>{toast('<b>CANICHE:</b> '+rep,false,5500);AU.sfx.voice(12,118);const cn=Wd.caniche;if(cn)npcSay(rep,[cn.position.x,cn.position.y+.5,cn.position.z],4.5);},1600);return true;}
-  function talkBoat(){const arg=isArg();
+  // Argentine small talk: a short che-che back-and-forth. lines alternate you / them
+  const CHE_CANICHE=[
+    [L2('Che, Caniche! All good, che?','¡Che, Caniche! ¿Todo bien, che?'),L2('Che, che, che! All good, che. And you, che?','¡Che, che, che! Todo bien, che. ¿Y vos, che?'),L2('Here, che, sampling, che. Cold, che.','Acá, che, muestreando, che. Frío, che.'),L2('Che, cold is Ushuaia, che. This is spring, che.','Che, frío es Ushuaia, che. Esto es primavera, che.')],
+    [L2('Che, che, che… which way to the crater, che?','Che, che, che… ¿pa\' dónde queda el cráter, che?'),L2('Che, look, che: up there, che, where the smoke is, che.','Che, mirá, che: allá arriba, che, donde sale humo, che.'),L2('Che, and is it far, che?','Che, ¿y queda lejos, che?'),L2('Che, two hours walking, che. Or four, che, if you stop for mate, che.','Che, dos horas caminando, che. O cuatro, che, si parás a tomar mate, che.')],
+    [L2('Che, Caniche, got any mate, che?','Che, Caniche, ¿tenés un mate, che?'),L2('Of course, che! Che, che, sweet or bitter, che?','¡Obvio, che! Che, che, ¿dulce o amargo, che?'),L2('Bitter, che. Obviously, che.','Amargo, che. Obvio, che.'),L2('That\'s it, che! You\'re one of us, che. Che, che.','¡Eso, che! Sos de los nuestros, che. Che, che.'),L2('Che, thanks, che.','Che, gracias, che.'),L2('Che, don\'t say thanks, che, or I stop serving, che!','Che, no digas gracias, che, ¡que dejo de cebar, che!')],
+    [L2('Che, did you see the river, che? It\'s orange, che.','Che, ¿viste el río, che? Está naranja, che.'),L2('Che, it\'s the iron, che. The volcano, che. Che.','Che, es el hierro, che. El volcán, che. Che.'),L2('Che, and can you drink it, che?','Che, ¿y se puede tomar, che?'),L2('Che, NO, che! Che, che, che. Ask Fernando, che.','¡Che, NO, che! Che, che, che. Preguntale a Fernando, che.')],
+    [L2('Che, Caniche, where are you from, che?','Che, Caniche, ¿vos de dónde sos, che?'),L2('Caviahue, che. Born and raised, che. And you, che?','De Caviahue, che. Nacido y criado, che. ¿Y vos, che?'),L2('From over there, che. You know, che.','De por allá, che. Vos sabés, che.'),L2('Ah, che, then you\'re from here, che. Che, che.','Ah, che, entonces sos de acá, che. Che, che.')],
+    [L2('Che… che.','Che… che.'),L2('Che.','Che.'),L2('Che, che, che.','Che, che, che.'),L2('Che! Che, che. Che.','¡Che! Che, che. Che.'),L2('Che, what a nice chat, che.','Che, qué linda charla, che.'),L2('The best, che.','La mejor, che.')]];
+  const CHE_BOAT=[
+    [L2('Che, Pedro! Che, che, how\'s it going, che?','¡Che, Pedro! Che, che, ¿cómo va eso, che?'),L2('Che, che, che! All good, che. Here throwing the Niskin, che.','¡Che, che, che! Todo bien, che. Acá tirando la Niskin, che.'),L2('Che, and how deep, che?','Che, ¿y a qué profundidad, che?'),L2('Twenty metres, che. Che, che, bring more bottles, che!','Veinte metros, che. ¡Che, che, traé más botellas, che!')],
+    [L2('Che! Che, Pedro! Che, over here, che!','¡Che! ¡Che, Pedro! ¡Che, acá, che!'),L2('Che! What\'s up, che! Che, is Sofi talking about seals again, che?','¡Che! ¡Qué hacés, che! Che, ¿la Sofi sigue hablando de focas, che?'),L2('Che, obviously, che.','Che, obvio, che.'),L2('Che, che, che. Classic, che.','Che, che, che. Clásico, che.')],
+    [L2('Che, Pedro, lend me the boat, che, che.','Che, Pedro, prestame el bote, che, che.'),L2('Che, no, che, the boat stays, che.','Che, no, che, el bote no se presta, che.'),L2('Che, just one lap, che!','¡Che, una vueltita nomás, che!'),L2('Che… OK, che. But you row, che. Che, che.','Che… bueno, che. Pero remás vos, che. Che, che.')],
+    [L2('Che, Pedro, is there any fish in the lake, che?','Che, Pedro, ¿hay pescado en el lago, che?'),L2('Che, none, che! pH 2.6, che. Only rotifers, che.','¡Che, ninguno, che! pH 2,6, che. Solo rotíferos, che.'),L2('Che, and rotifer asado, che?','Che, ¿y asado de rotíferos, che?'),L2('Che, you\'d need a million, che. Che, che, che.','Che, necesitarías un millón, che. Che, che, che.')]];
+  function cheChat(D,name,pos,voice){const L=pk(D);let t=0;L.forEach((l,i)=>{const mine=i%2===0;setTimeout(()=>{const s=l();
+      if(mine){toast(`<b>${LX('YOU','TÚ')}:</b> ${s}`,false,3000);say(s,2.8);AU.sfx.voice(6,CHARS[charIdx].f?225:140);}
+      else{toast(`<b>${name}:</b> ${s}`,false,3400);npcSay(s,pos(),3);AU.sfx.voice(10,voice);}},t);t+=mine?1700:2700;});}
+  function cheCaniche(){if(!isArg())return false;cheChat(CHE_CANICHE,'CANICHE',()=>{const cn=Wd.caniche;return cn?[cn.position.x,cn.position.y+.5,cn.position.z]:headPos();},118);return true;}
+  // Pedro on the R/V Caviahue gives one fact about the lake per shout, in order
+  const LAKE_FACTS=[L2('Lake Caviahue is about 9 km², a horseshoe with a north and a south arm. Up to ~95 m deep!','El Lago Caviahue tiene unos 9 km², es una herradura con brazo norte y brazo sur. ¡Hasta ~95 m de profundidad!'),
+    L2('pH around 2.6 today: acid as lemon juice. The Río Agrio brings it straight from the Copahue volcano.','pH cerca de 2,6 hoy: ácido como jugo de limón. El Río Agrio lo trae directo del volcán Copahue.'),
+    L2('The water is loaded with sulfate, iron and aluminium. That is why it looks so turquoise.','El agua está cargada de sulfato, hierro y aluminio. Por eso se ve tan turquesa.'),
+    L2('No fish here. Not one! Too acidic.','Aquí no hay peces. ¡Ni uno! Demasiado ácido.'),
+    L2('No copepods, no cladocerans, no molluscs either. The zooplankton is almost only rotifers.','Tampoco hay copépodos, ni cladóceros, ni moluscos. El zooplancton es casi puro rotífero.'),
+    L2('The phytoplankton is dominated by a tiny green alga, <i>Keratococcus</i>. It loves the acid.','El fitoplancton lo domina una microalga verde chiquitita, <i>Keratococcus</i>. Le encanta el ácido.'),
+    L2('Down in the mud, midge larvae (chironomids) are about the only animals that make it.','Abajo en el barro, las larvas de mosquito (quironómidos) son casi los únicos animales que aguantan.'),
+    L2('We lower the Niskin bottle to take water at different depths: surface, 20 m, the bottom…','Bajamos la botella Niskin para sacar agua a distintas profundidades: superficie, 20 m, el fondo…'),
+    L2('Extreme lake, extreme microbes: that is why we come to sample it!','Lago extremo, microbios extremos: ¡por eso venimos a muestrearlo!')];
+  let lakeFactI=0;
+  function talkBoat(){const arg=isArg();if(arg&&Math.random()<.6){cheChat(CHE_BOAT,'PEDRO (R/V Caviahue)',()=>[BOAT.x,lakeY()+.5,BOAT.z],125);return;}
     const you=arg?pk([LX('Che, Pedro! Che, che, how\'s it going, che?','¡Che, Pedro! Che, che, ¿cómo va eso, che?'),LX('Che! Che, Pedro! Che, over here, che!','¡Che! ¡Che, Pedro! ¡Che, acá, che!'),LX('Che, Pedro, lend me the boat, che, che.','Che, Pedro, prestame el bote, che, che.')]):LX('Ahoy, R/V Caviahue! How is the lake today?','¡Ah del barco, R/V Caviahue! ¿Cómo está el lago hoy?');
-    const rep=arg?pk([LX('Che, che, che! All good, che. Here throwing the Niskin, che.','¡Che, che, che! Todo bien, che. Acá tirando la Niskin, che.'),LX('Che! What\'s up, che! The lake is pH 2.6, che. Che.','¡Che! ¡Qué hacés, che! El lago está a pH 2,6, che. Che.'),LX('Che, no, che, the boat stays, che. Che, che, che.','Che, no, che, el bote no se presta, che. Che, che, che.')]):
-      pk([LX('Niskin bottle at 20 m, pH 2.6. The lake is behaving!','¡Niskin a 20 m, pH 2,6! ¡El lago se porta bien!'),LX('Tell the truck team to bring more dry ice!','¡Dile al equipo de la camioneta que traiga más hielo seco!'),LX('Sofi says hi! …and something about seals.','¡Sofi te manda saludos! …y algo sobre focas.')]);
+    let rep=arg?pk([LX('Che, che, che! All good, che. Here throwing the Niskin, che.','¡Che, che, che! Todo bien, che. Acá tirando la Niskin, che.'),LX('Che! What\'s up, che! The lake is pH 2.6, che. Che.','¡Che! ¡Qué hacés, che! El lago está a pH 2,6, che. Che.'),LX('Che, no, che, the boat stays, che. Che, che, che.','Che, no, che, el bote no se presta, che. Che, che, che.')]):
+      (Math.random()<.85?'🌊 '+LAKE_FACTS[lakeFactI++%LAKE_FACTS.length]():pk([LX('Tell the truck team to bring more dry ice!','¡Dile al equipo de la camioneta que traiga más hielo seco!'),LX('Sofi says hi! …and something about seals.','¡Sofi te manda saludos! …y algo sobre focas.')]));
+    if(arg&&Math.random()<.6)rep='🌊 '+LAKE_FACTS[lakeFactI++%LAKE_FACTS.length]()+' '+LX('Che.','Che.');
     toast(`<b>${LX('YOU','TÚ')}:</b> ${you}`,false,3200);AU.sfx.voice(6,CHARS[charIdx].f?225:140);say(you,2.8);
     setTimeout(()=>{toast('<b>PEDRO (R/V Caviahue):</b> '+rep,false,5500);npcSay(rep,[BOAT.x,lakeY()+.5,BOAT.z],4.5);AU.sfx.voice(10,125);},1600);}
   // ================= PERKS 2: Ricardo, Yasna, Catalina, Cata, Fernando, Celia, Gustavo, Ana, Sofi, Issotta
@@ -1561,16 +1633,130 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
     L2('Free pass! You have no excuse.','¡Pase gratis! No tienes excusa.'),L2('Thirty minutes at incline 12 and done.','Treinta minutos con inclinación 12 y listo.'),L2('Leg day tomorrow, are you in?','Mañana toca pierna, ¿te sumas?')];
   const ISS=[L2('What a great game! It turned out so fun, haha','¡Qué buen juego! Quedó muy divertido, jaja'),L2('See this? I made it 😎','¿Vieron? Lo hice yo 😎'),L2('Well… me and my slave Claude, hahaha 😈','Bueno… yo y mi esclavo Claude, jajaja 😈'),L2('Claude, faster with those lines of code! MWAHAHA','¡Claude, más rápido con esas líneas de código! MUAJAJAJA'),
     L2('So good I want to play it… oh wait, I am.','Quedó tan bueno que me dan ganas de jugarlo… ah, estoy jugando.'),L2('Give it 5 stars, OK?','Pónganle 5 estrellas, ¿ya?')];
-  function talkers(k,dt){ps.t2-=dt;if(ps.t2>0||ps.act)return;const onFoot=!pl.inTruck,mv=onFoot&&inputAxes().some(a=>Math.abs(a)>.05);
-    if(k==='ricardo'||k==='alejandra'){if(!mv)return;ps.t2=R(9,16);say('🧉 '+pk(RIC)(),2.4);AU.sfx.voice(4,k==='alejandra'?225:125);}
-    else if(k==='cata'){ps.t2=R(10,16);ps.cataN++;const sw=ps.cataN%2===0;say((sw?'✈️ ':'😒 ')+pk(sw?SUIZA:CATA)(),3.2);AU.sfx.voice(5,215);}
-    else if(k==='gustavo'){ps.t2=R(12,20);say('🏋️ '+pk(GYM)(),3.4);AU.sfx.voice(6,150);}
-    else if(k==='issotta'){ps.t2=R(14,22);const l=pk(ISS)();say(l,3.4);if(/MUA|MWA|jaja|haha/i.test(l))evilLaugh();else AU.sfx.voice(5,140);}
-    else if(k==='celia'&&onFoot){ps.t2=R(16,26);say('📿 '+pk(SANT)(),3.6);AU.sfx.voice(6,215);}
-    else if(k==='fernando'&&onFoot){ps.t2=R(15,24);const E=Wd.infoAt(pl.x,pl.z);if(E&&E.rv.d<.7&&E.rv.ph<4.5)say(pk([LX('That acidic river is calling me… 🤤','Ese río ácido me está llamando… 🤤'),LX('Just one little taste, nobody will notice…','Una probadita nomás, nadie se va a dar cuenta…')]),2.8);}}
+  const CAMI_ASK=[L2('Cami, how do I do this?','Cami, ¿cómo hago esto?'),L2('Cami, how does this work?','Cami, ¿cómo es esto?'),L2('Cami… Cami… how do I do this?','Cami… Cami… ¿cómo hago esto?'),
+    L2('Cami, is this right?','Cami, ¿así está bien?'),L2('Cami, what do you think?','Cami, ¿tú qué opinas?'),L2('Cami, which button do I press?','Cami, ¿qué botón aprieto?'),
+    L2('Cami, where does this go?','Cami, ¿esto dónde va?'),L2('Cami, can you check this for me?','Cami, ¿me revisas esto?'),L2('Cami, how did you do this last time?','Cami, ¿cómo hiciste esto la otra vez?'),
+    L2('Cami, one quick question… well, several.','Cami, una preguntita… bueno, varias.'),L2('Cami, how do I do this? Again, sorry.','Cami, ¿cómo hago esto? De nuevo, perdón.'),L2('Cami, the mouse isn\'t working.','Cami, no me funciona el mouse.')];
+  const CAMI_RE=[L2('Again, Pedro? 😅','¿Otra vez, Pedro? 😅'),L2('I just explained it to you!','¡Si te lo acabo de explicar!'),L2('Give it here, I\'ll do it.','Pásamelo, yo lo hago.'),
+    L2('The same as five minutes ago, Pedro.','Igual que hace cinco minutos, Pedro.'),L2('Yes, Pedro, it\'s fine 👍','Sí, Pedro, está bien 👍'),L2('Did you try turning it off and on?','¿Probaste apagar y prender?'),L2('Mmm… let me see.','Mmm… a ver, muéstrame.')];
+  const CAMI_ALONE=[L2('I should ask Cami about this…','Debería preguntarle esto a la Cami…'),L2('What would Cami say?','¿Qué diría la Cami?'),L2('I\'ll ask Cami for her opinion.','Le voy a pedir su opinión a la Cami.'),
+    L2('Cami would know how to do this.','La Cami sabría cómo hacer esto.'),L2('Better check it with Cami first.','Mejor lo reviso con la Cami primero.'),L2('I\'ll write it down to ask Cami later.','Lo anoto pa\' preguntarle después a la Cami.'),
+    L2('Cami? …ah, she isn\'t here.','¿Cami? …ah, no está.'),L2('How did Cami do this?','¿Cómo era que lo hacía la Cami?')];
+  function talkers(k,dt){ps.t2-=dt;if(ps.t2>0||ps.act||hush())return;const onFoot=!pl.inTruck,mv=onFoot&&inputAxes().some(a=>Math.abs(a)>.05);
+    if(k==='ricardo'||k==='alejandra'){if(!mv)return;ps.t2=R(15,30);say('🧉 '+pk(RIC)(),2.4);AU.sfx.voice(4,k==='alejandra'?225:125);}
+    else if(k==='cata'){ps.t2=R(15,30);ps.cataN++;const sw=ps.cataN%2===0;say((sw?'✈️ ':'😒 ')+pk(sw?SUIZA:CATA)(),3.2);AU.sfx.voice(5,215);}
+    else if(k==='pedro'){ps.t2=R(15,30);if(comp.on&&comp.g&&comp.dance<=0){say(pk(CAMI_ASK)(),2.8);AU.sfx.voice(10,120);
+        setTimeout(()=>{if(comp.on&&comp.g)npcSay(pk(CAMI_RE)(),()=>[comp.x,(pl.inTruck?truck.g.position.y+.1:Wd.heightAt(comp.x,comp.z))+.5,comp.z],2.6);},1900);}
+      else say('💭 '+pk(CAMI_ALONE)(),3.2);}
+    else if(k==='gustavo'){ps.t2=R(15,30);say('🏋️ '+pk(GYM)(),3.4);AU.sfx.voice(6,150);}
+    else if(k==='issotta'){ps.t2=R(15,30);const l=pk(ISS)();say(l,3.4);if(/MUA|MWA|jaja|haha/i.test(l))evilLaugh();else AU.sfx.voice(5,140);}
+    else if(k==='celia'&&onFoot){ps.t2=R(15,30);say('📿 '+pk(SANT)(),3.6);AU.sfx.voice(6,215);}
+    else if(k==='fernando'&&onFoot){ps.t2=R(15,30);const E=Wd.infoAt(pl.x,pl.z);if(E&&E.rv.d<.7&&E.rv.ph<4.5)say(pk([LX('That acidic river is calling me… 🤤','Ese río ácido me está llamando… 🤤'),LX('Just one little taste, nobody will notice…','Una probadita nomás, nadie se va a dar cuenta…')]),2.8);}}
   // ---- inner thoughts for characters (shown as subtitles in first person)
-  const THINK={abraham:[L2("Is it breakfast time yet? It's always breakfast time.",'¿Ya es hora del desayuno? Siempre es hora del desayuno.'),L2('Toast, eggs, coffee… and then the metagenomes.','Tostadas, huevos, café… y después los metagenomas.'),L2('Nobody samples well on an empty stomach.','Nadie muestrea bien con el estómago vacío.')],alejandro:[L2('I feel a little… feathery.','Me siento medio… emplumado.'),L2('Please, not the chicken thing in front of the PI.','Por favor, que no me pase lo del pollo delante del jefe.'),L2('Why do I keep wanting to peck at the gravel?','¿Por qué me dan ganas de picotear el ripio?')],camila:[L2('That river has a K-pop beat, I swear.','Ese río tiene ritmo de K-pop, lo juro.'),L2('Five, six, seven, eight… sample!','Cinco, seis, siete, ocho… ¡muestra!'),L2('I bet the idols would love Copahue.','Seguro que a los idols les encantaría el Copahue.')],catalina:[L2('This light is perfect for a photo.','Esta luz está perfecta para una foto.'),L2('Does this jacket go with the volcano?','¿Esta chaqueta combina con el volcán?'),L2('Pose first, sample second.','Primero la pose, después la muestra.')],dilanaz:[L2('This truck needs a better air filter.','A esta camioneta le falta un mejor filtro de aire.'),L2('Çay would be perfect right now.','Un çay me vendría perfecto ahora.'),L2('I can hear the engine asking for a tune-up.','Escucho al motor pidiendo una afinación.')],estefania:[L2('Shhh… the volcano is listening.','Shhh… el volcán está escuchando.'),L2('If I walk softly enough, nobody will notice me.','Si camino muy suave, nadie me va a notar.'),L2('Sometimes I can see through my own hands.','A veces veo a través de mis propias manos.')],gabriel:[L2('This slope? A warm-up.','¿Esta pendiente? Un calentamiento.'),L2("Crampons, ice axe, gaiters… I'm ready.",'Crampones, piolet, polainas… estoy listo.'),L2('Snow squall incoming. My favourite weather.','Viene una ventisca. Mi clima favorito.')],tito:[L2('The compass is tingling… the next site is that way.','La brújula está vibrando… el próximo sitio es por allá.'),L2('Filtering this fast should be illegal.','Filtrar así de rápido debería ser ilegal.'),L2('Follow the sparkles, Tito.','Sigue los brillitos, Tito.')],mati:[L2('Something weird is about to happen to me. I can feel it.','Algo raro me va a pasar. Lo presiento.'),L2('Bad luck? No, just a plot twist.','¿Mala suerte? No, un giro de guion.'),L2("Whatever breaks, I'll fix it with a smile.",'Lo que se rompa, lo arreglo con una sonrisa.')],pedro:[L2('Where is Camila? Oh, right behind me. As always.','¿Dónde está Camila? Ah, justo detrás de mí. Como siempre.'),L2("I'd rather be on the boat.",'Preferiría estar en el bote.'),L2('Lake Caviahue looks calm today.','El lago Caviahue se ve tranquilo hoy.')],priscilla:[L2('Ten kids, twenty litres. Easy.','Diez niños, veinte litros. Fácil.'),L2('I filter faster than they can ask for snacks.','Filtro más rápido de lo que alcanzan a pedir colación.'),L2('Just one quiet minute… please.','Solo un minuto de silencio… por favor.')],raquel:[L2('Did I drop another thesis?','¿Se me cayó otra tesis?'),L2('Che, this valley is gorgeous.','Che, qué lindo este valle.'),L2('I should staple my papers to my jacket.','Debería corchetear los papers a la chaqueta.')],seba:[L2('Here comes the PDI again… I can feel it.','Ya viene la PDI otra vez… lo presiento.'),L2('Where did I put my ID card?','¿Dónde dejé mi carnet?'),L2("Yes, officer, it's still me.",'Sí, oficial, sigo siendo yo.')],simon:[L2('Careful with the glassware… careful…','Cuidado con el vidrio… cuidado…'),L2("If something breaks, it wasn't me. Probably.",'Si algo se rompe, no fui yo. Probablemente.'),L2('Two hands on the jerrycan, Simón.','Las dos manos en el bidón, Simón.')],sofi:[L2('Did you know seals can sleep underwater?','¿Sabías que las focas pueden dormir bajo el agua?'),L2('This lake needs a seal.','A este lago le falta una foca.'),L2('Plié… and sample.','Plié… y muestra.')],yasna:[L2('The dogs are ready for the chorus.','Los perros están listos para el coro.'),L2('Culli, remember your part this time.','Culli, esta vez acuérdate de tu parte.'),L2('I think the cockroach has perfect pitch.','Creo que la cucaracha tiene oído absoluto.')],ana:[L2('This chapter is getting good.','Este capítulo se está poniendo bueno.'),L2('Cueca or tango at the next site?','¿Cueca o tango en el próximo sitio?'),L2('A little flamenco for the microbes.','Un poco de flamenco para los microbios.')],juan:[L2('What if we sold volcano water as an energy drink?','¿Y si vendemos agua del volcán como bebida energética?')]};
-  function thinkers(k,dt){if(!THINK[k]||ps.act||pl.inTruck)return;ps.t3=(ps.t3==null?R(8,14):ps.t3)-dt;if(ps.t3>0)return;ps.t3=R(16,28);if(bubT>0)return;say('💭 '+pk(THINK[k])(),3.6);}
+  const THINK={abraham:[L2("Is it breakfast time yet? It's always breakfast time.",'¿Ya es hora del desayuno? Siempre es hora del desayuno.'),L2('Toast, eggs, coffee… and then the metagenomes.','Tostadas, huevos, café… y después los metagenomas.'),L2('Nobody samples well on an empty stomach.','Nadie muestrea bien con el estómago vacío.')],alejandro:[L2('I feel a little… feathery.','Me siento medio… emplumado.'),L2('Please, not the chicken thing in front of the PI.','Por favor, que no me pase lo del pollo delante del jefe.'),L2('Why do I keep wanting to peck at the gravel?','¿Por qué me dan ganas de picotear el ripio?')],camila:[L2('That river has a K-pop beat, I swear.','Ese río tiene ritmo de K-pop, lo juro.'),L2('Five, six, seven, eight… sample!','Cinco, seis, siete, ocho… ¡muestra!'),L2('I bet the idols would love Copahue.','Seguro que a los idols les encantaría el Copahue.')],catalina:[L2('This light is perfect for a photo.','Esta luz está perfecta para una foto.'),L2('Does this jacket go with the volcano?','¿Esta chaqueta combina con el volcán?'),L2('Pose first, sample second.','Primero la pose, después la muestra.')],dilanaz:[L2('This truck needs a better air filter.','A esta camioneta le falta un mejor filtro de aire.'),L2('Çay would be perfect right now.','Un çay me vendría perfecto ahora.'),L2('I can hear the engine asking for a tune-up.','Escucho al motor pidiendo una afinación.')],estefania:[L2('Shhh… the volcano is listening.','Shhh… el volcán está escuchando.'),L2('If I walk softly enough, nobody will notice me.','Si camino muy suave, nadie me va a notar.'),L2('Sometimes I can see through my own hands.','A veces veo a través de mis propias manos.')],gabriel:[L2('This slope? A warm-up.','¿Esta pendiente? Un calentamiento.'),L2("Crampons, ice axe, gaiters… I'm ready.",'Crampones, piolet, polainas… estoy listo.'),L2('Snow squall incoming. My favourite weather.','Viene una ventisca. Mi clima favorito.')],tito:[L2('The compass is tingling… the next site is that way.','La brújula está vibrando… el próximo sitio es por allá.'),L2('Filtering this fast should be illegal.','Filtrar así de rápido debería ser ilegal.'),L2('Follow the sparkles, Tito.','Sigue los brillitos, Tito.')],mati:[L2('Something weird is about to happen to me. I can feel it.','Algo raro me va a pasar. Lo presiento.'),L2('Bad luck? No, just a plot twist.','¿Mala suerte? No, un giro de guion.'),L2("Whatever breaks, I'll fix it with a smile.",'Lo que se rompa, lo arreglo con una sonrisa.')],pedro:[L2('Where is Camila? Oh, right behind me. As always.','¿Dónde está Camila? Ah, justo detrás de mí. Como siempre.'),L2('I should run this by Cami.','Esto debería consultarlo con la Cami.'),L2('What would Cami think of this?','¿Qué opinará la Cami de esto?')],priscilla:[L2('Ten kids, twenty litres. Easy.','Diez niños, veinte litros. Fácil.'),L2('I filter faster than they can ask for snacks.','Filtro más rápido de lo que alcanzan a pedir colación.'),L2('Just one quiet minute… please.','Solo un minuto de silencio… por favor.')],raquel:[L2('Did I drop another thesis?','¿Se me cayó otra tesis?'),L2('Che, this valley is gorgeous.','Che, qué lindo este valle.'),L2('I should staple my papers to my jacket.','Debería corchetear los papers a la chaqueta.')],seba:[L2('Here comes the PDI again… I can feel it.','Ya viene la PDI otra vez… lo presiento.'),L2('Where did I put my ID card?','¿Dónde dejé mi carnet?'),L2("Yes, officer, it's still me.",'Sí, oficial, sigo siendo yo.')],simon:[L2('Careful with the glassware… careful…','Cuidado con el vidrio… cuidado…'),L2("If something breaks, it wasn't me. Probably.",'Si algo se rompe, no fui yo. Probablemente.'),L2('Two hands on the jerrycan, Simón.','Las dos manos en el bidón, Simón.')],sofi:[L2('Did you know seals can sleep underwater?','¿Sabías que las focas pueden dormir bajo el agua?'),L2('This lake needs a seal.','A este lago le falta una foca.'),L2('Plié… and sample.','Plié… y muestra.')],yasna:[L2('The dogs are ready for the chorus.','Los perros están listos para el coro.'),L2('Culli, remember your part this time.','Culli, esta vez acuérdate de tu parte.'),L2('I think the cockroach has perfect pitch.','Creo que la cucaracha tiene oído absoluto.')],ana:[L2('This chapter is getting good.','Este capítulo se está poniendo bueno.'),L2('Cueca or tango at the next site?','¿Cueca o tango en el próximo sitio?'),L2('A little flamenco for the microbes.','Un poco de flamenco para los microbios.')],juan:[L2('What if we sold volcano water as an energy drink?','¿Y si vendemos agua del volcán como bebida energética?')]};
+  function thinkers(k,dt){if(!THINK[k]||ps.act||pl.inTruck||hush())return;ps.t3=(ps.t3==null?R(8,14):ps.t3)-dt;if(ps.t3>0)return;ps.t3=R(15,30);if(bubT>0)return;say('💭 '+pk(THINK[k])(),3.6);}
+  // ---- more repertoire: extra inner thoughts for everyone and more lines for the talkers
+  const THINK2={
+    abraham:[L2('Scrambled or fried? Why not both?','¿Revueltos o fritos? ¿Por qué no los dos?'),L2('I packed three sandwiches. For the morning.','Traje tres sánguches. Para la mañana.'),L2('A metagenome is like a breakfast buffet: a bit of everything.','Un metagenoma es como un buffet de desayuno: un poco de todo.'),
+      L2('If I smell toast, I\'m stopping. No discussion.','Si huelo pan tostado, me detengo. Sin discusión.'),L2('Second breakfast is a scientific necessity.','El segundo desayuno es una necesidad científica.'),L2('Coffee first, reads mapping later.','Primero el café, después el mapeo de lecturas.')],
+    alejandro:[L2('Why do I suddenly want to peck the ground?','¿Por qué de repente me dan ganas de picotear el suelo?'),L2('Cock-a-doodle… no. No. Focus.','Kikirikí… no. No. Concéntrate.'),L2('I swear I just laid something.','Juraría que acabo de poner algo.'),
+      L2('Feathers in my lab coat again…','Plumas en la bata otra vez…'),L2('Is it normal to be afraid of foxes?','¿Es normal tenerle miedo a los zorros?'),L2('I should get tested. For… chicken.','Debería hacerme un examen. De… pollo.')],
+    alejandra:[L2('Che, this wind would blow a mate gourd away.','Che, este viento se lleva el mate volando.'),L2('Che, in Neuquén we call this a breeze.','Che, en Neuquén a esto le decimos brisa.'),L2('I miss a good choripán, che.','Extraño un buen choripán, che.'),
+      L2('Che, sulfur for breakfast, lunch and dinner.','Che, azufre al desayuno, almuerzo y cena.'),L2('Is the thermos still hot? Che, it has to be.','¿Sigue caliente el termo? Che, tiene que estar.'),L2('Che, this landscape is worth the trip.','Che, este paisaje vale el viaje.')],
+    ana:[L2('Chapter nine: the scientist climbs the volcano. Classic.','Capítulo nueve: la científica sube el volcán. Clásico.'),L2('A pirouette on the scoria? Maybe not.','¿Una pirueta en la escoria? Mejor no.'),L2('Five, six, seven, eight… sample!','Cinco, seis, siete, ocho… ¡muestra!'),
+      L2('This valley would be a perfect stage.','Este valle sería un escenario perfecto.'),L2('I brought two books. I should have brought four.','Traje dos libros. Debí traer cuatro.'),L2('Tango needs a partner. The jerrycan will do.','El tango necesita pareja. El bidón servirá.')],
+    camila:[L2('Pedro is going to ask me something in 3… 2… 1…','Pedro me va a preguntar algo en 3… 2… 1…'),L2('That choreography needs more practice.','Esa coreografía necesita más ensayo.'),L2('Python script, K-pop playlist, all set.','Script en Python, playlist de K-pop, todo listo.'),
+      L2('Who left the mouse without batteries?','¿Quién dejó el mouse sin pilas?'),L2('If this pipeline fails, I\'m dancing it off.','Si este pipeline falla, lo bailo pa\' olvidarlo.'),L2('Saranghae, Río Agrio 💜','Saranghae, Río Agrio 💜')],
+    cata:[L2('Deadline on Friday. Of course it is.','La fecha límite es el viernes. Obvio.'),L2('I wonder if the Alps smell like sulfur. Probably not.','Me pregunto si los Alpes huelen a azufre. Probablemente no.'),L2('Another form to fill. In triplicate.','Otro formulario que llenar. En triplicado.'),
+      L2('At least the volcano doesn\'t ask for an overhead.','Al menos el volcán no pide overhead.'),L2('Fondecyt, please, this year…','Fondecyt, por favor, este año…'),L2('I love this job. I just hate the budget.','Amo este trabajo. Solo odio el presupuesto.')],
+    catalina:[L2('This light is perfect for a portrait.','Esta luz es perfecta para un retrato.'),L2('Is my outfit volcano-proof? Let\'s find out.','¿Mi outfit es a prueba de volcán? Veamos.'),L2('The Copahue is my best side.','El Copahue es mi mejor ángulo.'),
+      L2('Golden hour at the crater. Iconic.','Hora dorada en el cráter. Icónico.'),L2('I need a flash for the fumaroles.','Necesito un flash pa\' las fumarolas.'),L2('Sampling look: neon boots, obviously.','Look de muestreo: botas neón, obvio.')],
+    celia:[L2('This rhythm in my feet won\'t stop, mi vida.','Este ritmo en los pies no se me quita, mi vida.'),L2('Where is my Cuban Celia when I need her?','¿Dónde está mi Celia cubana cuando la necesito?'),L2('Azúcar! Even the river has flavour.','¡Azúcar! Hasta el río tiene sabor.'),
+      L2('A little son montuno for the microbes.','Un poquito de son montuno pa\' los microbios.'),L2('Ay, qué frío, this is not Havana.','Ay, qué frío, esto no es La Habana.'),L2('Asere, what\'s going on here?','Asere, ¿qué bolá aquí?')],
+    dilanaz:[L2('That pickup needs new brake pads. I can hear it.','A esa camioneta le faltan pastillas de freno. Se escucha.'),L2('Çay after this site. Definitely.','Un çay después de este sitio. Seguro.'),L2('Torque, horsepower, cylinders… so relaxing.','Torque, caballos de fuerza, cilindros… qué relajante.'),
+      L2('Maybe I can swap the filtration pump for a fuel pump.','Quizás cambio la bomba de filtración por una de bencina.'),L2('Istanbul traffic trained me for these roads.','El tráfico de Estambul me entrenó para estos caminos.'),L2('One day I\'ll restore a classic 4x4.','Algún día voy a restaurar un 4x4 clásico.')],
+    estefania:[L2('Nobody heard me coming. As usual.','Nadie me escuchó llegar. Como siempre.'),L2('The quieter you are, the more you hear.','Mientras más silencio, más se escucha.'),L2('I feel a bit transparent today.','Hoy me siento un poco transparente.'),
+      L2('The lenga forest has its own voice.','El bosque de lenga tiene su propia voz.'),L2('I could stay here all afternoon.','Me podría quedar aquí toda la tarde.'),L2('Calm water, calm mind.','Agua tranquila, mente tranquila.')],
+    fernando:[L2('pH 2… how bad can it really be?','pH 2… ¿qué tan malo puede ser?'),L2('My bike could use a little acid wash.','A mi bici le vendría bien un lavado ácido.'),L2('Mountain bike, volcano, acid river: perfect day.','Bici de montaña, volcán, río ácido: día perfecto.'),
+      L2('Downhill to the lake, uphill for the science.','Bajada al lago, subida por la ciencia.'),L2('One sip. For science. Just one.','Un sorbo. Por la ciencia. Solo uno.'),L2('I should put a sampling rack on my bike.','Debería ponerle un portamuestras a la bici.')],
+    gabriel:[L2('This slope is only 40°. Easy.','Esta pendiente tiene solo 40°. Fácil.'),L2('Crampons or no crampons… crampons.','¿Crampones o sin crampones?… crampones.'),L2('Wind from the west, snow in an hour. I love it.','Viento del oeste, nieve en una hora. Me encanta.'),
+      L2('I left a spare rope in every truck. Just in case.','Dejé una cuerda de repuesto en cada camioneta. Por si acaso.'),L2('The summit is always closer than it looks. Almost.','La cumbre siempre está más cerca de lo que parece. Casi.'),L2('Headlamp, gloves, thermos. Ready.','Frontal, guantes, termo. Listo.')],
+    gustavo:[L2('Every jerrycan is a set of reps.','Cada bidón es una serie de repeticiones.'),L2('Protein shake after this site.','Batido de proteína después de este sitio.'),L2('These hills are free cardio.','Estos cerros son cardio gratis.'),
+      L2('Twenty litres? That\'s a warm-up.','¿Veinte litros? Eso es calentamiento.'),L2('I should film this for my routine.','Debería grabar esto pa\' mi rutina.'),L2('Squat to sample, stand to celebrate.','Sentadilla pa\' muestrear, de pie pa\' celebrar.')],
+    issotta:[L2('I should add more easter eggs. Nobody will find them.','Debería agregar más easter eggs. Nadie los va a encontrar.'),L2('Version 8.18 coming soon…','La versión 8.18 viene pronto…'),L2('I wrote this river. With my own shaders.','Este río lo escribí yo. Con mis propios shaders.'),
+      L2('Is this a bug or a feature? A feature.','¿Esto es un bug o una feature? Una feature.'),L2('One more line of code and I\'ll sleep.','Una línea más de código y me voy a dormir.'),L2('Did everybody rate it 5 stars yet?','¿Ya todos le pusieron 5 estrellas?')],
+    juan:[L2('Acid water as a service. AWaaS.','Agua ácida como servicio. AWaaS.'),L2('I need a pitch deck for this volcano.','Necesito un pitch deck pa\' este volcán.'),L2('Third can today… or fourth.','Tercera lata del día… o cuarta.'),
+      L2('What if the jerrycans were on the blockchain?','¿Y si los bidones estuvieran en la blockchain?'),L2('Series A funding for microbes. Think about it.','Ronda Serie A pa\' microbios. Piénsalo.')],
+    mati:[L2('What could go wrong today? Everything, probably.','¿Qué puede salir mal hoy? Todo, probablemente.'),L2('Is that cloud following me?','¿Esa nube me está siguiendo?'),L2('If a rock falls, it falls on me. Statistics.','Si cae una piedra, me cae a mí. Estadística.'),
+      L2('Plan B, plan C, plan D… I always need plan D.','Plan B, plan C, plan D… siempre necesito el plan D.'),L2('At least it makes for good stories.','Al menos sale una buena historia.'),L2('I\'ll fix it. I always do.','Lo arreglo. Siempre lo arreglo.')],
+    pedro:[L2('Sofi is on the boat… and I am here. Hmm.','La Sofi está en el bote… y yo aquí. Mmm.'),L2('Let me write down the question so I don\'t forget it.','Anoto la pregunta pa\' que no se me olvide.'),L2('Which cable was it again?','¿Cuál era el cable?'),
+      L2('I have a lot of questions. That\'s science.','Tengo muchas preguntas. Eso es ciencia.'),L2('Niskin, sonde, Niskin, sonde…','Niskin, sonda, Niskin, sonda…')],
+    priscilla:[L2('Did everyone put on sunscreen? Everyone?','¿Todos se echaron bloqueador? ¿Todos?'),L2('Counting heads: one, two… ten. Good.','Contando cabezas: uno, dos… diez. Bien.'),L2('Snacks are for AFTER the sample.','La colación es DESPUÉS de la muestra.'),
+      L2('Nobody touches the acid water. Nobody!','Nadie toca el agua ácida. ¡Nadie!'),L2('The little one wants to be a microbiologist. Help.','El más chico quiere ser microbiólogo. Auxilio.'),L2('I filter fast because I have no choice.','Filtro rápido porque no me queda otra.')],
+    raquel:[L2('Che, which folder was the draft in?','Che, ¿en qué carpeta estaba el borrador?'),L2('Reviewer 2 again, che. Always reviewer 2.','El revisor 2 otra vez, che. Siempre el revisor 2.'),L2('I need a bigger backpack, che.','Necesito una mochila más grande, che.'),
+      L2('Che, should I print another copy? Just in case.','Che, ¿imprimo otra copia? Por las dudas.'),L2('Twenty papers in the backpack… nineteen… eighteen…','Veinte papers en la mochila… diecinueve… dieciocho…')],
+    ricardo:[L2('Che, a good asado after this, che.','Che, un buen asado después de esto, che.'),L2('Che, the yerba is almost gone, che.','Che, se está acabando la yerba, che.'),L2('Che, in Buenos Aires they won\'t believe this.','Che, en Buenos Aires no me lo van a creer.'),
+      L2('Che, where did I leave the thermos?','Che, ¿dónde dejé el termo?'),L2('Che, che… what a view, che.','Che, che… qué vista, che.')],
+    seba:[L2('I have my ID. I checked three times.','Tengo el carnet. Lo revisé tres veces.'),L2('Do I look suspicious? I don\'t think so.','¿Me veo sospechoso? No creo.'),L2('Maybe I should wear a name tag.','Quizás debería usar una credencial.'),
+      L2('Sampler, not smuggler. Sampler.','Muestreador, no contrabandista. Muestreador.'),L2('Is that a patrol car? No… just a rock.','¿Eso es una patrulla? No… solo una piedra.')],
+    simon:[L2('Hands steady… hands steady…','Manos firmes… manos firmes…'),L2('I brought two spare sensors. I\'ll need three.','Traje dos sensores de repuesto. Voy a necesitar tres.'),L2('Glassware is just fragile by design.','El vidrio es frágil por diseño.'),
+      L2('Why does everything slip out of my hands?','¿Por qué todo se me resbala de las manos?'),L2('Nothing broken yet. Yet.','Nada roto todavía. Todavía.')],
+    sofi:[L2('A seal would slide down this slope so fast.','Una foca bajaría esta pendiente rapidísimo.'),L2('Elephant seals can dive 1,500 m. Just saying.','Los elefantes marinos bucean 1.500 m. Solo digo.'),L2('First position, second position… sampling position.','Primera posición, segunda posición… posición de muestreo.'),
+      L2('I miss the ocean. And its seals.','Extraño el mar. Y sus focas.'),L2('Is the lake cold enough for seals? Too acidic, sadly.','¿El lago está helado pa\' las focas? Muy ácido, qué pena.')],
+    tito:[L2('The compass tingles. We\'re close.','La brújula cosquillea. Estamos cerca.'),L2('Four times faster. It\'s not magic… it is magic.','Cuatro veces más rápido. No es magia… sí es magia.'),L2('Follow the sparkles. Always follow the sparkles.','Sigue los brillitos. Siempre sigue los brillitos.'),
+      L2('Where did I get this compass? Better not ask.','¿De dónde saqué esta brújula? Mejor no preguntar.'),L2('North is overrated. Samples are the way.','El norte está sobrevalorado. Las muestras son el camino.')],
+    yasna:[L2('Chorus rehearsal at 6. Everybody.','Ensayo del coro a las 6. Todos.'),L2('The duck is off-key again.','El pato está desafinado otra vez.'),L2('The guinea pig has stage fright.','El cuyi tiene miedo escénico.'),
+      L2('Culli wants a solo. We\'ll see.','La Culli quiere un solo. Veremos.'),L2('Which song for the next site? Something volcanic.','¿Qué canción pa\'l próximo sitio? Algo volcánico.')]};
+  Object.entries(THINK2).forEach(([k,a])=>{(THINK[k]=THINK[k]||[]).push(...a);});
+  RIC.push(L2('Che, che, what a cold, che.','Che, che, qué frío, che.'),L2('Che, want a mate? It\'s bitter, che.','Che, ¿querés un mate? Es amargo, che.'),L2('Che, don\'t walk so fast, che.','Che, no camines tan rápido, che.'),L2('Che, look at the colours of that river, che.','Che, mirá los colores de ese río, che.'),
+    L2('Che, the Copahue is ours, che. Well… half and half.','Che, el Copahue es nuestro, che. Bueno… mitad y mitad.'),L2('Che, loco, careful with the jerrycan.','Che, loco, cuidado con el bidón.'),L2('Che, re lindo esto, che.','Che, re lindo esto, che.'),L2('Che, dale, dale, che, let\'s go.','Che, dale, dale, che, vamos.'));
+  SUIZA.push(L2('In Switzerland the cows have better funding than I do.','En Suiza las vacas tienen más financiamiento que yo.'),L2('Geneva, Bern, Basel… I don\'t mind which.','Ginebra, Berna, Basilea… me da igual cuál.'),L2('Chocolate, mountains and salaries. Switzerland has it all.','Chocolate, montañas y sueldos. Suiza lo tiene todo.'),
+    L2('I\'m already learning German. Grüezi!','Ya estoy aprendiendo alemán. ¡Grüezi!'));
+  GYM.push(L2('Carry the jerrycan like a farmer\'s walk. Core tight!','Lleva el bidón como farmer\'s walk. ¡Abdomen firme!'),L2('Rest day? I don\'t know her.','¿Día de descanso? No la conozco.'),L2('After the campaign: gym, gym and more gym.','Después de la campaña: gimnasio, gimnasio y más gimnasio.'),
+    L2('Volcano stairs: the best glute workout.','Subir el volcán: el mejor ejercicio de glúteos.'),L2('Hydration is key! Not with that water, though.','¡La hidratación es clave! Pero no con esa agua.'));
+  ISS.push(L2('Claude, add more sheep. No, more.','Claude, pon más ovejas. No, más.'),L2('Every bug you find is an easter egg. Officially.','Cada bug que encuentren es un easter egg. Oficialmente.'),L2('Nobody samples faster than me. Because I wrote the rules.','Nadie muestrea más rápido que yo. Porque yo escribí las reglas.'),
+    L2('Look at those shadows. Look at them!','Miren esas sombras. ¡Mírenlas!'),L2('Next version: the volcano erupts confetti.','Próxima versión: el volcán erupciona confeti.'));
+  SANT.push(L2('Ochosi, guide my steps to the sampling site 🏹','Ochosi, guía mis pasos al sitio de muestreo 🏹'),L2('A candle for the ancestors when we get back, mi amor.','Una vela pa\' los ancestros cuando volvamos, mi amor.'),L2('Oyá rules the wind… and today she\'s angry 🌪️','Oyá manda en el viento… y hoy está brava 🌪️'),
+    L2('With aché everything works, even the pump.','Con aché todo funciona, hasta la bomba.'));
+  // ---- remarks when walking past animals (sheep, goats, dogs, foxes, guanacos, bandurrias, condors, fish)
+  const FAUNA_SAY={
+    sheep:['🐑',[L2('Look at all these sheep! Somebody is going to have a lot of wool.','¡Mira todas estas ovejas! Alguien va a tener harta lana.'),L2('Baaa. Sorry, I had to.','Beee. Perdón, tenía que hacerlo.'),
+      L2('Easy, sheep, I only want water, not your grass.','Tranquila, oveja, yo solo quiero agua, no tu pasto.'),L2('One sheep, two sheep… don\'t fall asleep, Lab!','Una oveja, dos ovejas… ¡no te duermas, Lab!'),L2('These are veranada sheep: they come up to the valley in summer.','Son ovejas de veranada: suben al valle en verano.')]],
+    goat:['🐐',[L2('Chivas! They climb better than we do.','¡Chivas! Trepan mejor que nosotros.'),L2('That goat is looking at me like I owe it money.','Esa chiva me mira como si le debiera plata.'),
+      L2('Don\'t eat my field notebook, please.','No te comas mi libreta de campo, por favor.'),L2('The crianceros bring the chivas up for the summer.','Los crianceros suben las chivas pa\'l verano.')]],
+    dog:['🐕',[L2('Hello, good boy! Guarding the flock?','¡Hola, perrito! ¿Cuidando el rebaño?'),L2('Working dog, no petting… well, maybe a little.','Perro de trabajo, no se acaricia… bueno, un poquito.'),
+      L2('He is doing a better job than all of us.','Está trabajando mejor que todos nosotros.')]],
+    fox:['🦊',[L2('A culpeo fox! Stay still, stay still…','¡Un zorro culpeo! Quieto, quieto…'),L2('Look at that orange tail!','¡Mira esa cola naranja!'),
+      L2('The fox is watching the sheep. And us.','El zorro está vigilando las ovejas. Y a nosotros.'),L2('Don\'t steal our sandwiches, fox.','No te robes los sánguches, zorro.')]],
+    guanaco:['🦙',[L2('Guanacos! Keep your distance, they spit.','¡Guanacos! Mantén la distancia, que escupen.'),L2('What a view: guanacos grazing in the steppe.','Qué vista: guanacos pastando en la estepa.'),
+      L2('That one is the lookout. It is staring right at me.','Ese es el vigía. Me está mirando fijo.'),L2('Wild cousins of the llama, living in the cold.','Primos salvajes de la llama, viviendo en el frío.')]],
+    guanacoRun:['🦙',[L2('Wait, don\'t run! I\'m harmless!','¡Espera, no corras! ¡Soy inofensivo!'),L2('Look at them go! Guanacos are fast.','¡Mira cómo corren! Los guanacos son rápidos.'),L2('Oops, I scared the herd.','Ups, asusté a la manada.')]],
+    bandurria:['🐦',[L2('Bandurrias! Look at those curved beaks.','¡Bandurrias! Mira esos picos curvos.'),L2('They are digging for worms in the mud.','Están sacando gusanos del barro.'),
+      L2('Bandurrias are so loud in the morning…','Las bandurrias son tan escandalosas en la mañana…')]],
+    bandurriaFly:['🐦',[L2('Ay, I scared the bandurrias!','¡Ay, espanté a las bandurrias!'),L2('There they go, honking like a traffic jam.','Ahí van, gritando como taco en hora punta.'),L2('Sorry, birds! Keep eating!','¡Perdón, pajaritos! ¡Sigan comiendo!')]],
+    condor:['🦅',[L2('Look up! A condor!','¡Mira arriba! ¡Un cóndor!'),L2('Three metres of wings and it doesn\'t even flap.','Tres metros de alas y ni siquiera aletea.'),
+      L2('The condor is circling… I hope it is not waiting for me.','El cóndor está dando vueltas… ojalá no me esté esperando a mí.'),L2('The condor rides the warm air off the volcano.','El cóndor aprovecha el aire caliente del volcán.')]],
+    fish:['🐟',[L2('A fish jumped! This water is not so acidic here.','¡Saltó un pez! Aquí el agua no es tan ácida.'),L2('Trout! In the Agrio up high you would never see that.','¡Una trucha! Río arriba en el Agrio nunca verías eso.'),L2('Did you see that? Splash!','¿Viste eso? ¡Splash!')]]};
+  const FAUNA_ME={abraham:{sheep:[L2('Sheep… lamb… asado… is it lunch time?','Ovejas… cordero… asado… ¿ya es hora de almuerzo?')],goat:[L2('Chivito al palo… no, Abraham, focus.','Chivito al palo… no, Abraham, concéntrate.')]},
+    sofi:{sheep:[L2('Cute, but they are not seals.','Tiernas, pero no son focas.')],fish:[L2('A fish! A seal would love this river.','¡Un pez! A una foca le encantaría este río.')],guanaco:[L2('Guanacos are fine… but have you seen a seal?','Los guanacos están bien… ¿pero has visto una foca?')]},
+    alejandro:{bandurria:[L2('Bandurrias… I feel a strange connection to them.','Bandurrias… siento una conexión extraña con ellas.')],condor:[L2('Condor, brother! Take me with you!','¡Cóndor, hermano! ¡Llévame contigo!')]},
+    yasna:{dog:[L2('Another voice for the dog choir!','¡Otra voz para el coro de perros!')],sheep:[L2('The sheep could do the backing vocals. Beee!','Las ovejas podrían hacer los coros. ¡Beee!')]},
+    fernando:{fish:[L2('If a fish lives here, I can drink it. Right?','Si aquí vive un pez, me lo puedo tomar. ¿Cierto?')]},
+    pedro:{guanaco:[L2('Cami, do guanacos count as microbes? No? OK.','Cami, ¿los guanacos cuentan como microbios? ¿No? Ya.')]},
+    simon:{goat:[L2('Careful, chiva, don\'t knock over the glassware!','¡Cuidado, chiva, no me botes el vidrio!')]},
+    gustavo:{guanaco:[L2('Look at those legs! Guanacos never skip leg day.','¡Mira esas patas! Los guanacos nunca se saltan el día de pierna.')]}};
+  const faunaCd={};let faunaT=6;
+  function faunaNear(){const o=[],x=pl.x,z=pl.z;
+    if(Wd.groups.life.visible)(Wd.animals||[]).forEach(A=>{if(A.g.visible!==false)o.push({kind:A.goat?'goat':A.kind,d:Math.hypot(A.x-x,A.z-z)});});
+    if(window.FPW&&FPW.fauna)try{FPW.fauna(x,z).forEach(a=>o.push(a.kind==='guanaco'&&a.st==='flee'?{kind:'guanacoRun',d:a.d}:a.kind==='bandurria'&&a.st==='fly'?{kind:'bandurriaFly',d:a.d}:a));}catch(_){}
+    return o;}
+  const FAUNA_R={sheep:.7,goat:.7,dog:.5,fox:.9,guanaco:1.1,guanacoRun:1.1,bandurria:.8,bandurriaFly:.9,condor:2.5,fish:.9};
+  const FAUNA_CD={condor:150,fish:40,guanacoRun:25,bandurriaFly:25};
+  function faunaTalk(k,dt){faunaT-=dt;for(const q in faunaCd)faunaCd[q]-=dt;if(faunaT>0||ps.act||pl.inTruck||bubT>0||hush()||mode!=='play')return;faunaT=1;
+    const seen=faunaNear().filter(a=>FAUNA_SAY[a.kind]&&a.d<FAUNA_R[a.kind]&&!(faunaCd[a.kind]>0)).sort((a,b)=>a.d/FAUNA_R[a.kind]-b.d/FAUNA_R[b.kind]);if(!seen.length)return;
+    const kind=seen[0].kind,[ico,pool]=FAUNA_SAY[kind],base=kind.replace(/Run|Fly/,''),mine=(FAUNA_ME[k]||{})[base];
+    let l=(mine&&Math.random()<.5?pk(mine):pk(pool))();if(isArg()&&Math.random()<.5)l='Che, '+l.charAt(0).toLowerCase()+l.slice(1);
+    say(ico+' '+l,3.4);AU.sfx.voice(5,CHARS[charIdx].f?220:140);faunaCd[kind]=FAUNA_CD[kind]||R(45,70);if(kind!==base)faunaCd[base]=Math.max(faunaCd[base]||0,20);faunaT=R(15,30);}
   // ---- scheduler for the new acts
   function trigger2(k,dt,foot,moving){if(ps.act)return;
     if(k==='yasna'){ps.n2-=dt;if(ps.n2<=0&&foot&&pl.carry===0){ps.n2=R(38,55);start('karaoke',10.5);}}
@@ -1630,11 +1816,13 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
     if(!silent){toast(LX('🧗 Gabriel gears up: ','🧗 Gabriel se equipa: ')+'<b>'+pick.map(x=>x[1]()).join(' + ')+'</b>',false,3600);AU.sfx.click();spark(pl.x,pl.g.position.y+.2,pl.z,10,0xffd23f,.4,.9);}}
   const GAB=[L2('This is nothing, you should see Aconcagua.','Esto no es nada, deberías ver el Aconcagua.'),L2('Snow? Perfect conditions 🏔️','¿Nieve? Condiciones perfectas 🏔️'),L2('Summit first, coffee later ☕','Primero la cumbre, después el café ☕'),
     L2('Always carry a spare carabiner.','Siempre hay que llevar un mosquetón de repuesto.'),L2('I can sample in a whiteout blindfolded.','Yo muestreo en un whiteout con los ojos cerrados.'),L2('Who needs trails? 🐐','¿Quién necesita senderos? 🐐')];
+  GAB.push(L2('Rope, harness, helmet. The three amigos.','Cuerda, arnés, casco. Los tres amigos.'),L2('This squall is barely a breeze.','Esta ventisca es apenas una brisa.'),L2('I\'ll race you to the crater. You\'ll lose.','Te echo una carrera al cráter. Vas a perder.'),
+    L2('Mountains don\'t care about deadlines.','A las montañas no les importan los plazos.'));
   X2.bino={start(){say(LX('🔭 Let me check the route…','🔭 Déjame revisar la ruta…'),2);},tick(A){if(once(A,'a',1.3))say(pk([LX('I see the summit… and a condor 🦅','Veo la cumbre… y un cóndor 🦅'),LX('Route looks good. Crampons on!','La ruta se ve bien. ¡Crampones puestos!'),LX('Weather window: 20 minutes. Let\'s go!','Ventana de buen tiempo: 20 minutos. ¡Vamos!')]),2.4);},
     pose(A,u,g){g.rotation.y=A.yaw;u.armL.rotation.z=u.armR.rotation.z=2.2;u.armL.rotation.x=.55;u.armR.rotation.x=-.55;g.rotation.x=-.08;u.can.visible=false;},end(){}};
   function gabriel(dt){if(!GEAR.g||GEAR.g.parent!==pl.g)gearRoll(true);GEAR.next-=dt;if(GEAR.next<=0)gearRoll(false);
     if(!ps.act){ps.n2-=dt;if(ps.n2<=0&&!pl.inTruck&&pl.fill<=0){ps.n2=R(28,42);if(GEAR.look.includes('bino'))start('bino',3);else{ps.t2=0;}}
-      ps.t2-=dt;if(ps.t2<=0){ps.t2=R(14,22);say('🧗 '+pk(GAB)(),3);AU.sfx.voice(5,140);}}}
+      ps.t2-=dt;if(ps.t2<=0&&!hush()){ps.t2=R(15,30);say('🧗 '+pk(GAB)(),3);AU.sfx.voice(5,140);}}}
   // ================= PERKS 4: Ana reads, Mati the jinx, Estefanía the silent
   const BOOKS=[['📗','One Hundred Years of Solitude','Cien años de soledad',L2('Too many Aurelianos… I need a family tree 🌳','Demasiados Aurelianos… necesito un árbol genealógico 🌳')],
     ['📘','Brock Biology of Microorganisms','Brock, Biología de los microorganismos',L2('Chapter 13: acidophiles. Basically, this river.','Capítulo 13: acidófilos. O sea, este río.')],
@@ -1689,17 +1877,21 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
   // ---- Estefanía: silent, calm, sometimes half-transparent
   const ESTE=[L2('(whispers) listen… the forest is breathing 🌿','(susurra) escucha… el bosque respira 🌿'),L2('(whispers) no need to rush.','(susurra) no hay que apurarse.'),L2('(whispers) shhh… a bird is singing.','(susurra) shhh… está cantando un pájaro.'),
     L2('(whispers) I like the sound of the water.','(susurra) me gusta el sonido del agua.'),L2('(whispers) breathe in… breathe out…','(susurra) inhala… exhala…'),L2('(whispers) I\'ve been here the whole time.','(susurra) estuve aquí todo el rato.')];
+  ESTE.push(L2('(whispers) the wind is saying something…','(susurra) el viento está diciendo algo…'),L2('(whispers) look how the steam moves.','(susurra) mira cómo se mueve el vapor.'),L2('(whispers) the stones are warm here.','(susurra) aquí las piedras están tibias.'),
+    L2('(whispers) everything is fine.','(susurra) todo está bien.'));
   const EST={a:1,tgt:1,next:R(14,24),hold:0,mats:null,g:null};
   function esteMats(){if(EST.g===pl.g&&EST.mats)return;EST.g=pl.g;EST.mats=[];pl.g.traverse(o=>{if(o.isMesh&&o.material&&!o.material.transparent){o.material=o.material.clone();o.material.transparent=true;EST.mats.push(o.material);}});}
   function estefania(dt){esteMats();EST.next-=dt;if(EST.hold>0){EST.hold-=dt;if(EST.hold<=0)EST.tgt=1;}
     if(EST.next<=0){EST.next=R(18,30);EST.tgt=.28;EST.hold=R(6,9);say('<span style="opacity:.7;font-size:12px">'+pk([LX('(fades out quietly…)','(se desvanece en silencio…)'),LX('(whispers) I\'m still here…','(susurra) sigo aquí…')])+'</span>',2.4);}
     EST.a+=(EST.tgt-EST.a)*Math.min(1,dt*1.6);EST.mats.forEach(m=>m.opacity=EST.a);
-    ps.t2-=dt;if(ps.t2<=0&&!ps.act){ps.t2=R(16,26);say('<span style="font-size:12px;font-weight:400;font-style:italic;opacity:.8">'+pk(ESTE)()+'</span>',3.2);}}
+    ps.t2-=dt;if(ps.t2<=0&&!ps.act&&!hush()){ps.t2=R(15,30);say('<span style="font-size:12px;font-weight:400;font-style:italic;opacity:.8">'+pk(ESTE)()+'</span>',3.2);}}
   function esteOff(){if(EST.mats){EST.mats.forEach(m=>m.opacity=1);}EST.a=EST.tgt=1;EST.hold=0;}
   // ================= PERKS 5: Dilanaz the mechanic, Celia's Cuban best friend
   const MECH=[L2('One day I\'ll have my own garage: "Dilanaz Motors" 🏁','Algún día tendré mi propio taller: "Dilanaz Motors" 🏁'),L2('Science? Nah. Pistons, gaskets and motor oil 🛢️','¿Ciencia? Nah. Pistones, empaquetaduras y aceite de motor 🛢️'),
     L2('Hear that idle? The fan belt is slipping.','¿Escuchas ese ralentí? Está patinando la correa.'),L2('I\'d swap the 0.22 µm filter for an oil filter any day.','Cambiaría el filtro de 0,22 µm por un filtro de aceite cuando quieras.'),
     L2('This truck deserves a turbo. And so do I.','Esta camioneta merece un turbo. Y yo también.'),L2('Forget sequencing, I want to rebuild a V8 🔧','Olvídate de secuenciar, yo quiero armar un V8 🔧'),L2('Double-overhead cam… so beautiful 😍','Doble árbol de levas a la cabeza… qué hermoso 😍')];
+  MECH.push(L2('Diesel smells better than sulfur. Fight me.','El diésel huele mejor que el azufre. Discútanme.'),L2('I can hear a loose bolt somewhere.','Escucho un perno suelto por algún lado.'),L2('A lift kit and bigger tyres: that\'s the dream.','Un kit de suspensión y ruedas más grandes: ese es el sueño.'),
+    L2('Motor oil every 10,000 km. Don\'t forget it.','Aceite cada 10.000 km. No se olviden.'));
   X2.mech={start(A,u){const w=new THREE.Group();w.position.set(0,-.068,0);u.armR.add(w);A_(w,new THREE.BoxGeometry(.003,.03,.004),'#c9c9d1',.004,.004,0);A_(w,new THREE.TorusGeometry(.005,.0018,4,8,Math.PI*1.4),'#c9c9d1',.004,.02,0);A.w=w;
       A.yaw=Math.atan2(-(truck.z-pl.z),truck.x-pl.x);say(LX('🔧 Wait, this engine sounds wrong… let me check!','🔧 Espera, este motor suena raro… ¡déjame revisar!'),2.6);},
     tick(A,dt){A.c=(A.c||0)-dt;if(A.c<=0&&A.t<5.4){A.c=R(.25,.5);beep(pk([180,240,320]),.05,'square',.05);const fx=truck.x+Math.cos(truck.yaw)*.18,fz=truck.z-Math.sin(truck.yaw)*.18;spark(fx,truck.g.position.y+.12,fz,5,0xffb21a,.4,.6,.03);if(Math.random()<.4)smokeP(fx,truck.g.position.y+.12,fz,false);}
@@ -1723,14 +1915,14 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
     end(A){if(A.fg){puff(A.fx,A.fz);spark(A.fx,Wd.heightAt(A.fx,A.fz)+.2,A.fz,14,undefined,.4,1);Wd.scene.remove(A.fg);}if(A.g===pl.g)say(LX('Ay, I love her! 💛','¡Ay, cómo la quiero! 💛'),2);}};
   function trigger5(k,dt,foot){if(ps.act)return;
     if(k==='dilanaz'){ps.n3-=dt;if(ps.n3<=0&&foot&&Math.hypot(pl.x-truck.x,pl.z-truck.z)<.7){ps.n3=R(35,55);start('mech',6.4);}
-      ps.t3-=dt;if(ps.t3<=0){ps.t3=R(16,26);say('🔧 '+pk(MECH)(),3.2);AU.sfx.voice(5,215);}}
+      ps.t3-=dt;if(ps.t3<=0&&!hush()){ps.t3=R(15,30);say('🔧 '+pk(MECH)(),3.2);AU.sfx.voice(5,215);}}
     else if(k==='celia'){ps.n3-=dt;if(ps.n3<=0&&foot&&pl.carry===0){ps.n3=R(28,42);start('friend',9.6);}}}
   // ---------- main hooks
   function onChar(silent){if(ps.act)endAct();ps.n3=R(12,20);ps.t3=R(6,10);ps.t2=R(4,8);ps.n2=R(9,15);ps.bal=0;ps.anaI=ps.anaI||Math.floor(Math.random()*5);ps.cataN=0;ps.next=R(7,12);ps.talk=R(3,6);ps.boost=0;ps.sofiCd=2;ps.dist=0;ps.lx=null;if(is('seba'))ps.next=R(18,28);
     if(!is('pedro'))compRemove();if(!is('tito'))compassOff();
     const want=veh(VEH.type);if(truck.g&&truck.g.userData.vt!==want)setVehicle(VEH.type,VEH.col);
     if(silent&&desc())setTimeout(()=>toast('✨ '+desc(),false,6000),2600);}
-  function update(dt,t){const k=who();updFX(dt);
+  function update(dt,t){const k=who();updFX(dt);ps.q=(ps.q||0)+dt;
     bubT-=dt;for(let i=NB.length-1;i>=0;i--){NB[i].t-=dt;if(NB[i].t<=0){NB[i].el.remove();NB.splice(i,1);}}
     if(k==='pedro')compUpdate(dt,t);else if(comp.g)compRemove();
     if(k==='tito')compass(t);else compassOff();
@@ -1746,8 +1938,8 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
       else if(k==='juan'&&tk(!pl.inTruck&&pl.fill<=0)){ps.next=R(15,24);start('drink',1.8);}
       else if(k==='seba'&&tk(!WX.block&&pl.fill<=0)){ps.next=R(45,70);start('pdi',7.2);}
       else if(k==='issotta')issotta();}
-    if(k==='juan'){ps.boost=Math.max(0,ps.boost-dt);if(!ps.act&&(ps.talk-=dt)<=0){ps.talk=R(7,12);say('💼 '+pk(STARTUP)(),4.6);}}
-    trigger2(k,dt,foot,moving);talkers(k,dt);thinkers(k,dt);trigger5(k,dt,foot);if(ps.tune>0)ps.tune-=dt;
+    if(k==='juan'){ps.boost=Math.max(0,ps.boost-dt);if(!ps.act&&(ps.talk-=dt)<=0&&!hush()){ps.talk=R(15,30);say('💼 '+pk(STARTUP)(),4.6);}}
+    trigger2(k,dt,foot,moving);talkers(k,dt);thinkers(k,dt);faunaTalk(k,dt);trigger5(k,dt,foot);if(ps.tune>0)ps.tune-=dt;
     if(k==='priscilla')kidsUpdate(dt,t);else if(KIDS.list.length)kidsRemove();
     if(k==='gabriel')gabriel(dt);else if(GEAR.g)gearOff();
     if(k==='estefania')estefania(dt);else if(EST.a<1)esteOff();
@@ -1804,8 +1996,8 @@ function updatePlay(dt,t){
     const h0=Wd.heightAt(truck.x,truck.z),h1=Wd.heightAt(nx,nz);const dd=Math.abs(truck.speed*dt)||1e-6;
     const slope=(h1-h0)/dd,m1=meters(h1);
     let block=null;
-    if(nx<Wd.X0+.3||nx>Wd.X1-.3||nz<Wd.Z0+.3||nz>Wd.Z1-.3)block='That is the edge of the map!';
-    else if(Math.hypot(nx-base.x,nz-base.z)<.55&&Math.hypot(nx-base.x,nz-base.z)<Math.hypot(truck.x-base.x,truck.z-base.z))block='🚧 Vehicles stay outside the MEL Field Base. Park and walk in (E).';
+    if(offEdge(nx,nz,.3)){startFall(true,fx*truck.speed,fz*truck.speed);return;}
+    if(Math.hypot(nx-base.x,nz-base.z)<.55&&Math.hypot(nx-base.x,nz-base.z)<Math.hypot(truck.x-base.x,truck.z-base.z))block='🚧 Vehicles stay outside the MEL Field Base. Park and walk in (E).';
     else if(Wd.infoAt(nx,nz).dl<.03)block='Trucks don\'t float — find another way around the lake.';
     else if(m1>2330&&h1>h0)block='Too steep and loose for the truck up here. Get out <kbd>E</kbd> and hike!';
     else if(!onRoad&&slope>1.6&&truck.speed>0)block='Too steep! Try a gentler line (or walk).';
@@ -1826,6 +2018,7 @@ function updatePlay(dt,t){
       if(GB){if(slope>.6)sp*=1.35;if(WX.block&&S.t-lastWarn>6){lastWarn=S.t;toast(LX('❄ Gabriel laughs at the squall and keeps going 🧗','❄ Gabriel se ríe de la nevazón y sigue 🧗'),false,1800);}}
       else sp*=clamp(1-Math.max(0,slope-.6)*.22,.3,1);if(slope>2.6&&S.t-lastWarn>3){lastWarn=S.t;toast(GB?LX('🐐 Gabriel flies up the scree like a mountain goat!','🐐 ¡Gabriel sube el acarreo como cabra de montaña!'):'🧗 Scrambling up loose scree…',false,1400);}
       const mx=pl.x+dx*sp*dt,mz=pl.z+dz*sp*dt;
+      if(offEdge(mx,mz,.2)){startFall(false,dx*sp,dz*sp);return;}
       if(!walkable(mx,mz))warnOnce('Too deep to wade — go around.');
       else if(slope>(PK.is('gabriel')?16:9))warnOnce('Sheer cliff! Find another route.');
       else{const ps=Math.floor(pl.walk/Math.PI);pl.x=mx;pl.z=mz;pl.walk+=dt*sp*38;
@@ -1946,10 +2139,10 @@ function updateHUD(){compassHUD();
   M.forEach(m=>{const s=st(m.c);const d=Math.hypot(pl.x-m.ax,pl.z-m.az);
     const html=`${m.c.replace('_','–')}${s.done?' ✔':''}<small>${m.en}${d>3?' · '+d.toFixed(1)+' km':''}</small>`;if(m.lbl._h!==html){m.lbl.innerHTML=html;m.lbl._h=html;}
     m.lbl.className='glbl'+(s.done?' done':'')+(S.target===m?' tg':'');
-    projectLabel(m.lbl,m.ax,m.b.position.y+.78,m.az,cam.map||d<14||S.target===m,S.target===m);  // the selected site shows through everything
+    projectLabel(m.lbl,m.ax,m.b.position.y+.78,m.az,cam.map||d<2.5||S.target===m,cam.map||S.target===m);  // the selected site shows through everything; others only up close (and in line of sight) or on the map
 });
   kits.forEach(k=>projectLabel(k.lbl,k.x,Wd.heightAt(k.x,k.z)+.3,k.z,!cam.map&&Math.hypot(pl.x-k.x,pl.z-k.z)<4));
-  const db=Math.hypot(pl.x-base.x,pl.z-base.z);projectLabel(base.lbl,base.x,base.g.position.y+.45,base.z,cam.map||db<16||S.target==='base');
+  const db=Math.hypot(pl.x-base.x,pl.z-base.z);projectLabel(base.lbl,base.x,base.g.position.y+.45,base.z,cam.map||db<2.5||S.target==='base',cam.map||S.target==='base');
   // compass
   let T=S.target;if(!T){T=nearestOpen();}
   if(T){const tx=T==='base'?base.x:T.ax,tz=T==='base'?base.z:T.az;const ang=Math.atan2(-(tz-pl.z),tx-pl.x);const rel=ang-(cam.yaw+cam.dragYaw);
@@ -2296,7 +2489,7 @@ function quakeHUD(){if(EV.st==='quake')return ` · 🌋 ${LX('ERUPTION IN','ERUP
 function fpgHook(dt){if(!window.FPG)return;try{
   const E=ctx&&ctx.E,wm=(E&&E.m)||(modal&&modal.fpSite)||null;const site=wm?wm.c.replace('_','–'):(pl.carrySite||'').replace('_','–');
   let ph=null;const mm=wm||M.find(q=>q.c===pl.carrySite);if(mm&&mm.smp&&mm.smp.v&&mm.smp.v.pH!=null)ph=mm.smp.v.pH;else if(FPG.visible){try{ph=Wd.nearestRiver(pl.x,pl.z).ph;}catch(_){}}
-  FPG.setChar(CHARS[charIdx]||CHARS[0]);if(pl.g&&!pl.g.userData.hands)pl.g.userData.hands=rollHands();FPG.setHands(pl.g&&pl.g.userData.hands);
+  FPG.setChar(CHARS[charIdx]||CHARS[0]);if(pl.g&&!pl.g.userData.hands){pl.g.userData.hands=rollHands(charIdx);addTechProp(pl.g);}FPG.setHands(pl.g&&pl.g.userData.hands);
   if(window.FPW)try{FPW.update(dt,{fishZones:(fpgHook.fz=fpgHook.fz||M.filter(m=>m.c==='PT'||m.c==='LN').map(m=>[m.ax,m.az,2.4])),x:pl.inTruck?truck.x:pl.x,z:pl.inTruck?truck.z:pl.z,play:mode==='play'||mode==='finale',meters,roadPts,eggs:EGGS,found:eggsFound,night:WX.night});}catch(e){console.error('fpworld',e);}
   FPG.update(dt,{eye:eyeH(),fp:fpOn()&&!EV.cine,yaw:cam.yaw+cam.dragYaw,pitch:clamp(cam.fpPitch||0,-1.5,1.5),walk:pl.walk||0,moving:(pl.moveT||0)>0,running:!!pl.running,jy:pl.jy||0,
     carry:pl.carry,fill:pl.fill||0,filling:!modal&&!!(E&&E.hold&&K('KeyE')),canNear:!modal&&!!(E&&E.hold),nearQ:!modal&&!!(ctx&&ctx.Q&&ctx.Q.f),modal:modal&&modal.fp3d||null,panel:!!(modal&&$('#g-ov').classList.contains('fp3d')),site,ph,lang:LANG});
@@ -2306,7 +2499,7 @@ function tick(dt,t){
   if(mode==='play'&&!modal&&!EV.cine)updatePlay(dt,t);
   if(modal&&modal.tick){if(WX.block&&modal.field&&!PK.is('gabriel')){AUX.pump=0;AUX.gurgle=0;}else modal.tick(dt);}
   updateWorldEnv(dt,mode==='play');
-  updateModels(dt,t);if(mode!=='title')updateCrew(dt,t);updateBoat(dt,t);updateBathers(dt,t);updateEggs(dt,t);updateVillage(dt,t);updateVolcano(dt,t);if(!cineCamera(dt))updateCamera(dt);fpgHook(dt);updateHUD();drawMinimap();
+  updateModels(dt,t);fallTick(dt,t);if(mode!=='title')updateCrew(dt,t);updateBoat(dt,t);updateBathers(dt,t);updateEggs(dt,t);updateVillage(dt,t);updateVolcano(dt,t);if(!cineCamera(dt))updateCamera(dt);fpgHook(dt);updateHUD();drawMinimap();
   const E=Wd.infoAt(pl.x,pl.z),alt=meters(pl.inTruck?truck.g.position.y:Wd.heightAt(pl.x,pl.z));
   const filling=!modal&&ctx&&ctx.E&&ctx.E.hold&&K('KeyE');
   AU.update(dt,{water:Math.max(clamp(1-E.rv.d/1.1,0,1),E.dl<.8?clamp(1-E.dl/.8,0,1)*.45:0),crater:clamp(1-E.dc/4,0,1),vent:clamp(1-E.dc/1.5,0,1),wind:Math.max(clamp((alt-1800)/900,0,1)*.8+.12,WX.snow*.95),rain:WX.rainK,snow:WX.snow,boat:BOAT.near||0,finale:mode==='finale',drama:EV.st==='erupt'?2:EV.st==='quake'?1:0,quake:EV.shake,night:WX.night,alt,
@@ -2686,6 +2879,7 @@ const ACH=[
  ['eggsAll','🗝️','Lore master','Maestro del saber','Find every hidden story.','Encuentra todas las historias.'],
  ['erupt','🌋','Eyewitness','Testigo','Witness the eruption.','Presencia la erupción.'],
  ['pet','🐕','Good dog','Buen perrito','Pet the camp dog.','Acaricia al perro del campamento.'],
+ ['void','🕳️','Off the edge','Al vacío','Fall off the edge of the world (and land back in one piece).','Cáete por el borde del mundo (y aterriza entero).'],
  ['brake','🦙','Guanaco guardian','Guardián del guanaco','Brake in time for a crossing guanaco.','Frena a tiempo ante un guanaco.'],
  ['fixer','🔧','Pit crew','Mecánico de ruta','Change a flat tyre.','Cambia un neumático pinchado.'],
  ['ride','🤝','Good colleague','Buen colega','Give a colleague a lift.','Lleva a un colega.'],
@@ -2698,6 +2892,7 @@ const ACH=[
  ['photo','📸','Field photographer','Fotógrafo de campo','Take a photo in photo mode.','Toma una foto en el modo foto.'],
  ['expedition','🧗','Hardcore','Expedicionario','Complete a site on Expedition difficulty.','Completa un sitio en dificultad Expedición.'],
 ];
+X.unlock=id=>unlock(id);  // for game code outside xaInit (e.g. falling off the edge)
 function unlock(id){if(ach[id])return;ach[id]=new Date().toISOString().slice(0,10);SS('cfc_ach',ach);const a=ACH.find(q=>q[0]===id);if(!a)return;
   setTimeout(()=>{toast(`🏅 <b>${LX('BADGE UNLOCKED','¡LOGRO DESBLOQUEADO!')}</b> ${a[1]} ${LX(a[2],a[3])}`,false,3600);try{AU.sfx.tada();}catch(e){}if(Wd&&mode==='play')powAt(a[1]+' '+LX('BADGE!','¡LOGRO!'),'#8ac926',34,.4);},900);}
 function checkAch(){const n=S.samples.length;if(n>=1)unlock('first');if(n>=5)unlock('five');if(M.length&&M.every(m=>st(m.c).done))unlock('all');

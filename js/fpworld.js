@@ -60,9 +60,9 @@ const AURA_COL={cuero:'#ff6a3a',ucumar:'#ffb23f',pillan:'#ffd23f',pirepillan:'#b
 function build(){W=window.WORLD;root=new T.Group();root.name='fpworld';W.scene.add(root);
   const add=(key,geo,max,m)=>{const im=new T.InstancedMesh(geo,m,max);im.count=0;im.instanceMatrix.setUsage(T.DynamicDrawUsage);im.frustumCulled=false;im.userData.max=max;
     im.instanceColor=new T.InstancedBufferAttribute(new Float32Array(max*3),3);root.add(im);meshes[key]=im;};
-  add('tuft',geoTuft(9,.04,.02),2600,swayMat());add('grass',geoTuft(12,.028,.03),4200,swayMat());add('neneo',geoNeneo(),380,W.toon('#ffffff'));
-  add('cane',geoCane(),260,swayMat());add('fern',geoFern(),260,swayMat({side:T.DoubleSide}));add('flower',geoFlower(),420,swayMat());
-  add('stone',new T.DodecahedronGeometry(.012,0),900,W.toon('#ffffff'));
+  add('tuft',geoTuft(9,.04,.02),4200,swayMat());add('grass',geoTuft(12,.028,.03),6500,swayMat());add('neneo',geoNeneo(),700,W.toon('#ffffff'));
+  add('cane',geoCane(),450,swayMat());add('fern',geoFern(),450,swayMat({side:T.DoubleSide}));add('flower',geoFlower(),750,swayMat());
+  add('stone',new T.DodecahedronGeometry(.012,0),1600,W.toon('#ffffff'));
   for(let i=0;i<3;i++){const c=makeCondor();root.add(c);condors.push({g:c,a:Math.random()*6.28,r:1.6+i*.9,h:2.2+i*.8,sp:.16+i*.04,ox:0,oz:0,ph:i*2.1});}
   const tex=glowTex();
   herdsInit();auraTex=tex;built=true;}
@@ -76,19 +76,21 @@ const col=new T.Color(),m4=new T.Matrix4(),q=new T.Quaternion(),e=new T.Euler(),
 const PAL={coiron:['#cdbb6a','#bda95a','#d8c98a','#a9a054'],green:['#6a9a3a','#5c8a34','#7fa844'],neneo:['#7a9a3c','#6d8f38','#8aa44a'],stone:['#6e6660','#8a8078','#5a4e4a','#9a9088'],
   scoria:['#8a3e2e','#6b2e24','#a24a34'],sulfur:['#e0c84a','#d8b43a','#f0dc6a'],ochre:['#b8672a','#c97a34','#9a5424'],flower:['#ffd23f','#b15cff','#ff6fa8','#ffffff'],fern:['#4f8a3a','#5f9a42'],cane:['#8aa44a','#7a9a3c']};
 function pick(a,h){return a[Math.floor(h*a.length)%a.length];}
-function scatter(px,pz,I){const C=.085,R=2.1,n0=Math.floor(R/C);const cnt={};for(const k in meshes)cnt[k]=0;
-  const put=(key,x,y,z,s,ry,c,tilt)=>{const im=meshes[key];const i=cnt[key];if(i>=im.userData.max)return;cnt[key]++;e.set(tilt||0,ry,tilt?tilt*.7:0);q.setFromEuler(e);sc.set(s*K,s*K,s*K);m4.compose(v.set(x,y,z),q,sc);im.setMatrixAt(i,m4);col.set(c);im.setColorAt(i,col);};
+function scatter(px,pz,I){const C=.12,R=5,n0=Math.floor(R/C);let fk=1;const cnt={};for(const k in meshes)cnt[k]=0;
+  const put=(key,x,y,z,s,ry,c,tilt)=>{s*=fk;if(s<.02)return;const im=meshes[key];const i=cnt[key];if(i>=im.userData.max)return;cnt[key]++;e.set(tilt||0,ry,tilt?tilt*.7:0);q.setFromEuler(e);sc.set(s*K,s*K,s*K);m4.compose(v.set(x,y,z),q,sc);im.setMatrixAt(i,m4);col.set(c);im.setColorAt(i,col);};
   const RP=(I.roadPts||[]).filter(p=>Math.abs(p[0]-px)<R+.2&&Math.abs(p[1]-pz)<R+.2);const road=(x,z)=>{let b=1e9;for(const p of RP){const d=(p[0]-x)**2+(p[1]-z)**2;if(d<b)b=d;}return Math.sqrt(b);};
   const ci=Math.floor(px/C),cj=Math.floor(pz/C);
   for(let i=ci-n0;i<=ci+n0;i++)for(let j=cj-n0;j<=cj+n0;j++){const h1=hs(i,j,1);const x=(i+hs(i,j,2))*C,z=(j+hs(i,j,3))*C;const d=Math.hypot(x-px,z-pz);if(d>R)continue;
-    if(d>1.2&&h1>.55)continue; // thinner far away
+    if(d>2&&h1>.55)continue; // thinner far away
+    if(d>3.5&&hs(i,j,13)>.55)continue; // and thinner again in the outer ring
+    fk=Math.min(1,(R-d)/1.4);fk=fk*fk*(3-2*fk);  // edge fade: things grow in as they enter the radius instead of popping
     if(d<.07)continue; // nothing growing right in your face
     const E=W.infoAt(x,z);if(!E||E.dl<.04||E.rv.d<.05)continue;if(RP.length&&road(x,z)<.035)continue;
     const y=W.heightAt(x,z),alt=I.meters?I.meters(y):1500,ry=hs(i,j,4)*6.283,s=.75+hs(i,j,5)*.6,h2=hs(i,j,6);
     const acid=E.rv.d<.22&&E.rv.ph<4,forest=E.n1>.47&&alt<2050,high=alt>2250||E.dc<1.6,vent=E.dv<.5;
     if(vent||(acid&&h2<.35)){put('stone',x,y+.002,z,s*(.6+h2*.5),ry,pick(vent?PAL.sulfur:(h2<.18?PAL.ochre:PAL.sulfur),hs(i,j,7)),.3);continue;}
     if(high){if(h1<.3)put('stone',x,y+.002,z,s*(h2<.2?1.6:.8),ry,pick(h2<.5?PAL.scoria:PAL.stone,hs(i,j,7)),.4);else if(h1<.36&&alt<2600)put('tuft',x,y,z,s*.7,ry,pick(PAL.coiron,hs(i,j,7)));continue;}
-    if(I.dense&&d<1.3&&!high&&(forest||x>XL())){const hh=hs(i,j,9);if(hh<.75)put('grass',x+(hh-.4)*.05,y,z+(hs(i,j,10)-.5)*.05,s*.8,ry+1,pick(forest?PAL.green:PAL.coiron,hh));if(hh<.4)put('grass',x-(hh-.2)*.06,y,z-(hs(i,j,11)-.5)*.06,s*.65,ry+2,pick(forest?PAL.green:PAL.green,hs(i,j,12)));}
+    if(I.dense&&d<1.9&&!high&&(forest||x>XL())){const hh=hs(i,j,9),f0=fk;fk=Math.min(f0,(1.9-d)/.5);if(hh<.75)put('grass',x+(hh-.4)*.05,y,z+(hs(i,j,10)-.5)*.05,s*.8,ry+1,pick(forest?PAL.green:PAL.coiron,hh));if(hh<.4)put('grass',x-(hh-.2)*.06,y,z-(hs(i,j,11)-.5)*.06,s*.65,ry+2,pick(forest?PAL.green:PAL.green,hs(i,j,12)));fk=f0;}
     if(forest){if(h1<.42)put('grass',x,y,z,s,ry,pick(PAL.green,hs(i,j,7)));else if(h1<.445&&E.rv.d>.25)put('cane',x,y,z,s*.75,ry,pick(PAL.cane,hs(i,j,7)));else if(h1<.55)put('fern',x,y,z,s*1.2,ry,pick(PAL.fern,hs(i,j,7)));
       else if(h1<.66)put('stone',x,y+.002,z,s*.8,ry,pick(PAL.stone,hs(i,j,7)),.3);continue;}
     if(x<XL()){ // above Lake Caviahue: Andean steppe — sparse coirón, the odd shrub, lots of rock and sulfur
@@ -161,12 +163,20 @@ function fishTick(dt,I,near){if(!FISH){const g=new T.Group();const m=new T.Mesh(
   if(F.on){const k=F.t/.7;F.g.visible=k<1;F.g.position.set(F.x+Math.cos(F.yaw)*.12*k,F.y+Math.sin(k*Math.PI)*.1,F.z-Math.sin(F.yaw)*.12*k);F.g.rotation.set(0,F.yaw,Math.cos(k*Math.PI)*.9);
     if(k>=1){F.on=0;F.t=-(3+Math.random()*6);F.rt=0;F.ring.position.set(F.x+Math.cos(F.yaw)*.12,F.y+.001,F.z-Math.sin(F.yaw)*.12);}}}
 
+// visible near-field animals around (x,z), for the characters' remarks: [{kind,d,st}]
+FPW.fauna=function(x,z){const o=[];if(!built)return o;const d=(ax,az)=>Math.hypot(ax-x,az-z);
+  if(BIRD)BIRD.a.forEach(b=>{if(b.g.visible)o.push({kind:'bandurria',d:d(b.x,b.z),st:b.st});});
+  herds.forEach(H=>H.an.forEach(A=>{if(A.g.visible)o.push({kind:'guanaco',d:d(A.x,A.z),st:A.st});}));
+  condors.forEach(c=>{if(c.g.visible)o.push({kind:'condor',d:d(c.g.position.x,c.g.position.z)});});
+  if(FISH&&FISH.on)o.push({kind:'fish',d:d(FISH.x,FISH.z)});
+  return o;};
+
 // ------------------------------------------------------------ per frame
 FPW.update=function(dt,I){if(!window.WORLD)return;if(!built)build();wind.value+=dt;const t=wind.value;
   const C=W.camera,near=Math.hypot(C.position.x-I.x,C.position.z-I.z)<3.5&&I.play;root.visible=true;
   for(const k in meshes)meshes[k].visible=near;
   I.dense=!!(window.REAL&&REAL.on);if(I.dense!==FPW._dense){FPW._dense=I.dense;last.x=1e9;}
-  if(near&&(Math.hypot(I.x-last.x,I.z-last.z)>.3)){last.x=I.x;last.z=I.z;scatter(I.x,I.z,I);try{treesNear(I.x,I.z);}catch(e){console.warn('trees',e);}}
+  if(near&&(Math.hypot(I.x-last.x,I.z-last.z)>.2)){last.x=I.x;last.z=I.z;scatter(I.x,I.z,I);try{treesNear(I.x,I.z);}catch(e){console.warn('trees',e);}}
   if(TD){['ring','brn','tuft','tip','twig'].forEach(k=>TD[k].visible=near);TD.leaf.forEach(im=>im.visible=near);}
   steamTick(dt,I,near);birdsTick(dt,I,near,t);fishTick(dt,I,near);
   // condors soar over the walker, drifting slowly

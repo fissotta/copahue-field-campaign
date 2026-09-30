@@ -92,7 +92,7 @@ function terrainStd(m){if(std.has(m))return std.get(m);const s=toStd(m);s.roughn
         vec3 grad=sign(det)*(dhx*r1+dhy*r2);normal=normalize(mix(normal,normalize(abs(det)*normal-grad*.0025),gK));}`);};
   s.customProgramCacheKey=()=>'terrR2';return s;}
 function sweep(root){root.traverse(o=>{if(!o.material||o.userData.noReal)return;const conv=m=>{if(m&&m.isMeshToonMaterial){return o.userData.terr||o===W.terrain?terrainStd(m):toStd(m);}return m;};
-  if(Array.isArray(o.material))o.material=o.material.map(conv);else o.material=conv(o.material);if(o.isMesh&&o.material&&o.material.isMeshStandardMaterial){o.receiveShadow=true;if(REAL.shadows&&!o.isInstancedMesh&&!o.material.transparent&&!o.userData.terr)o.castShadow=true;}});}
+  if(Array.isArray(o.material))o.material=o.material.map(conv);else o.material=conv(o.material);if(o.isMesh&&o.material&&o.material.isMeshStandardMaterial&&!o.userData.noShadow){o.receiveShadow=true;if(REAL.shadows&&!o.isInstancedMesh&&!o.material.transparent&&!o.userData.terr)o.castShadow=true;}});}
 function unsweep(root){root.traverse(o=>{if(!o.material)return;const back=m=>m&&m.userData&&m.userData.toon?m.userData.toon:m;if(Array.isArray(o.material))o.material=o.material.map(back);else o.material=back(o.material);});}
 
 // ------------------------------------------------------------ environment map from the current sky (for PBR reflections / ambient)

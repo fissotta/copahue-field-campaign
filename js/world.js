@@ -85,7 +85,18 @@ function capsule(x,z,a,b,r){const bx=b[0]-a[0],bz=b[1]-a[1];let t=((x-a[0])*bx+(
 const DEMN=GEO.dem;
 const DEM=(()=>{const b=atob(DEMN.b64);const a=new Uint16Array(b.length/2);for(let i=0;i<a.length;i++)a[i]=b.charCodeAt(2*i)|(b.charCodeAt(2*i+1)<<8);return a;})();
 function demAt(x,z){const fx=clamp((x-X0)/W*DEMN.nx,0,DEMN.nx-1e-3),fz=clamp((z-Z0)/D*DEMN.nz,0,DEMN.nz-1e-3);const i=Math.floor(fx),j=Math.floor(fz),tx=fx-i,tz=fz-j;const g=(a,b)=>DEM[b*(DEMN.nx+1)+a];return lerp(lerp(g(i,j),g(i+1,j),tx),lerp(g(i,j+1),g(i+1,j+1),tx),tz);}
-const LG=GEO.lake;const LSDF=(()=>{const b=atob(LG.b64);const a=new Float32Array(b.length);for(let i=0;i<a.length;i++){let v=b.charCodeAt(i);if(v>127)v-=256;a[i]=v/50;}return a;})();
+// Ruta Provincial 26 según Google Maps (camino.png): hacia Copahue sale al norte por el brazo norte; hacia Loncopué bordea la orilla sur del brazo sur
+const ROADS=[
+ [[-37.8712,-71.0509],[-37.8653,-71.0495],[-37.86228,-71.04633],[-37.86255,-71.04106],[-37.86105,-71.03653],[-37.85688,-71.03159],[-37.8524,-71.02619],[-37.8493,-71.02247],[-37.84288,-71.01943],[-37.836,-71.022],[-37.830,-71.036],[-37.826,-71.056],[-37.823,-71.078],[-37.8215,-71.0955]],
+ [[-37.86228,-71.04633],[-37.86533,-71.0495],[-37.8712,-71.05086],[-37.87495,-71.05052],[-37.87938,-71.05505],[-37.8843,-71.05052],[-37.8875,-71.04612],[-37.89044,-71.03903],[-37.89327,-71.03159],[-37.89445,-71.02551],[-37.89392,-71.01551],[-37.89498,-71.00658],[-37.89632,-70.9978],[-37.90166,-70.99374],[-37.90781,-70.99239],[-37.91075,-70.98698],[-37.91144,-70.97752],[-37.9134,-70.9741],[-37.93,-70.94],[-37.96,-70.87],[-38.00,-70.78],[-38.04,-70.69],[-38.07,-70.62],[-38.10,-70.585]],
+].map(r=>r.map(p=>P(p[0],p[1])));
+const LG=GEO.lake;const LSDF=(()=>{const b=atob(LG.b64);const a=new Float32Array(b.length);for(let i=0;i<a.length;i++){let v=b.charCodeAt(i);if(v>127)v-=256;a[i]=v/50;}
+  // Lake Caviahue grown a little (up to LAKE_GROW) so the boat has room, but not near Ruta 26, which hugs the shore
+  const LAKE_GROW=.13,segs=[];ROADS.forEach(R=>{for(let k=0;k<R.length-1;k++)segs.push([R[k],R[k+1]]);});
+  for(let j=0;j<LG.nz;j++)for(let i=0;i<LG.nx;i++){const n=j*LG.nx+i;if(a[n]>LAKE_GROW+.3)continue;const x=LG.x0+i*LG.res,z=LG.z0+j*LG.res;let rd=1e9;
+    for(const [p,q] of segs){const bx=q[0]-p[0],bz=q[1]-p[1];const t=clamp(((x-p[0])*bx+(z-p[1])*bz)/(bx*bx+bz*bz),0,1);rd=Math.min(rd,Math.hypot(p[0]+bx*t-x,p[1]+bz*t-z));}
+    a[n]-=LAKE_GROW*smooth(.12,.4,rd);}
+  return a;})();
 function caviSdf(x,z){const fx=(x-LG.x0)/LG.res,fz=(z-LG.z0)/LG.res;if(fx<0||fz<0||fx>=LG.nx-1||fz>=LG.nz-1)return 3;const i=Math.floor(fx),j=Math.floor(fz),tx=fx-i,tz=fz-j;const g=(a,b)=>LSDF[b*LG.nx+a];return lerp(lerp(g(i,j),g(i+1,j),tx),lerp(g(i,j+1),g(i+1,j+1),tx),tz);}
 const LAKES=[
  {n:'Lago Caviahue',level:LG.level,col:'#39c6c0',depth:80,grid:true,bbox:[LG.x0,LG.x0+LG.nx*LG.res,LG.z0,LG.z0+LG.nz*LG.res]},
@@ -368,11 +379,6 @@ function buildRivers(){
 }
 
 // roads + cars
-// Ruta Provincial 26 según Google Maps (camino.png): hacia Copahue sale al norte por el brazo norte; hacia Loncopué bordea la orilla sur del brazo sur
-const ROADS=[
- [[-37.8712,-71.0509],[-37.8653,-71.0495],[-37.86228,-71.04633],[-37.86255,-71.04106],[-37.86105,-71.03653],[-37.85688,-71.03159],[-37.8524,-71.02619],[-37.8493,-71.02247],[-37.84288,-71.01943],[-37.836,-71.022],[-37.830,-71.036],[-37.826,-71.056],[-37.823,-71.078],[-37.8215,-71.0955]],
- [[-37.86228,-71.04633],[-37.86533,-71.0495],[-37.8712,-71.05086],[-37.87495,-71.05052],[-37.87938,-71.05505],[-37.8843,-71.05052],[-37.8875,-71.04612],[-37.89044,-71.03903],[-37.89327,-71.03159],[-37.89445,-71.02551],[-37.89392,-71.01551],[-37.89498,-71.00658],[-37.89632,-70.9978],[-37.90166,-70.99374],[-37.90781,-70.99239],[-37.91075,-70.98698],[-37.91144,-70.97752],[-37.9134,-70.9741],[-37.93,-70.94],[-37.96,-70.87],[-38.00,-70.78],[-38.04,-70.69],[-38.07,-70.62],[-38.10,-70.585]],
-].map(r=>r.map(p=>P(p[0],p[1])));
 const roadPaths=[];
 function buildRoads(){
   const mat=toon('#5a5566',{side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});const dash=new THREE.MeshBasicMaterial({color:0xffd23f,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4});
@@ -519,7 +525,7 @@ function buildFauna(){
                 {c:P(-37.8795,-71.1215),n:14,col:['#fbf7ee','#6b4a33','#ffffff'],dogs:['#6b4a33'],goats:true}];
   flocks.forEach(F=>{
     for(let i=0;i<F.n;i++){const a=rnd()*6.28,r=Math.sqrt(rnd())*.28;const x=F.c[0]+Math.cos(a)*r,z=F.c[1]+Math.sin(a)*r;
-      const g=F.goats?makeGoat(F.col[i%F.col.length]):makeSheep(F.col[i%F.col.length]);groups.life.add(g);animals.push({g,kind:'sheep',x,z,hx:F.c[0],hz:F.c[1],a:rnd()*6.28,sp:.012,R:.33,ph:rnd()*6});}
+      const g=F.goats?makeGoat(F.col[i%F.col.length]):makeSheep(F.col[i%F.col.length]);groups.life.add(g);animals.push({g,kind:'sheep',goat:!!F.goats,x,z,hx:F.c[0],hz:F.c[1],a:rnd()*6.28,sp:.012,R:.33,ph:rnd()*6});}
     F.dogs.forEach((dc,j)=>{const g=makeDog(dc);groups.life.add(g);animals.push({g,kind:'dog',x:F.c[0],z:F.c[1],hx:F.c[0],hz:F.c[1],a:j*3,sp:.45,R:.42,ph:j*3});});
   });
 }
@@ -750,7 +756,7 @@ function buildLife(){
   const cm=toon('#ffffff');
   for(let i=0;i<14;i++){const g=new THREE.Group();const n=4+Math.floor(rnd()*4);
     for(let k=0;k<n;k++){const r=.5+rnd()*.8;const s=new THREE.Mesh(new THREE.IcosahedronGeometry(r,2),cm);s.position.set((k-n/2)*.7+rnd()*.3,rnd()*.35,rnd()*.6-.3);s.scale.y=.7;g.add(s);}
-    g.position.set(lerp(X0,X1,rnd()),13+rnd()*3,lerp(Z0,Z1,rnd()));g.userData.sp=.25+rnd()*.35;clouds.push(g);groups.life.add(g);}
+    g.position.set(lerp(X0,X1,rnd()),13+rnd()*3,lerp(Z0,Z1,rnd()));g.userData.sp=.25+rnd()*.35;g.traverse(o=>{o.castShadow=o.receiveShadow=false;o.userData.noShadow=1;});clouds.push(g);groups.life.add(g);}
   // steam puffs
   const ct=document.createElement('canvas');ct.width=ct.height=64;const cx=ct.getContext('2d');
   cx.fillStyle='#fff';cx.strokeStyle='#1d1a2b';cx.lineWidth=5;cx.beginPath();cx.arc(32,32,26,0,6.3);cx.fill();cx.stroke();
@@ -965,7 +971,7 @@ const postMat=new THREE.ShaderMaterial({defines:{HQ:1,HATCH:1},uniforms:{aaK:{va
         float sd=max(dot(vd,sunV),0.);float day=1.-stars;
         col+=vec3(1.,.86,.62)*(pow(sd,90.)*.55+pow(sd,10.)*.14)*day;
         if(el>.0){vec2 cp=rd.xz/(el+.12)*.9+vec2(time*.012,time*.004);float cn=fbm(cp*1.3);float cov=smoothstep(.63-cloudK*.25,.69-cloudK*.25,cn)*smoothstep(.0,.12,el);
-          float sh=fbm(cp*1.3+vec2(.06,.05));vec3 cc=mix(vec3(1.),mix(bot,top,.3)*.82+vec3(.08),step(cn+.035,sh)*.8);cc=mix(cc,cc*vec3(1.,.9,.85),pow(sd,6.)*.5);
+          float sh=fbm(cp*1.3+vec2(.06,.05));vec3 cc=mix(vec3(1.),mix(bot,top,.3)*.82+vec3(.08),smoothstep(.0,.03,sh-cn-.035)*.8*smoothstep(.04,.3,el));cc=mix(cc,cc*vec3(1.,.9,.85),pow(sd,6.)*.5);
           cc=mix(cc,col,.15+stars*.6);col=mix(col,cc,cov*(.92-stars*.5));}{vec2 sc=floor(gl_FragCoord.xy/(3.*dpr));float h=fract(sin(dot(sc,vec2(12.9898,78.233)))*43758.5453);col+=vec3(step(.997,h))*stars*smoothstep(.3,.8,vUv.y)*(.6+.4*sin(time*2.+h*40.));}
         if(stars>.01){float y=vUv.y;float ax=vUv.x*5.+time*.04;float yc=.74+.05*sin(ax*1.3+sin(ax*.6+time*.1)*2.);float band=exp(-pow((y-yc)*11.,2.))+.6*exp(-pow((y-yc-.07)*16.,2.));
           float cur=.55+.45*sin(vUv.x*38.+time*.7+sin(vUv.x*11.+time*.3)*3.);col+=mix(vec3(.15,1.,.55),vec3(.65,.3,1.),smoothstep(yc-.02,yc+.1,y))*band*cur*stars*.18;
@@ -1000,7 +1006,7 @@ sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0006;sun.shadow.normalBias=.
 let shadowScanT=0;
 function markShadowCasters(){scene.traverse(o=>{if(!(o.isMesh||o.isInstancedMesh)||o.isSprite)return;const m=Array.isArray(o.material)?o.material[0]:o.material;if(!m)return;
   const solid=!m.transparent&&!m.isMeshBasicMaterial&&!m.isShaderMaterial&&!m.isPointsMaterial;o.receiveShadow=solid||!!m.isMeshToonMaterial;o.castShadow=solid&&o!==terrain&&!o.userData.terr;});
-  if(typeof clouds!=='undefined')clouds.forEach(c=>c.traverse(o=>{o.castShadow=false;}));}
+  if(typeof clouds!=='undefined')clouds.forEach(c=>c.traverse(o=>{o.castShadow=o.receiveShadow=false;}));}
 function applyGfx(recompile){const P=GFX_PRESETS[GFX.level];
   DPR=Math.max(.5,Math.min(window.devicePixelRatio||1,P.dpr)*GFX.scale);resize();postMat.uniforms.inkW.value=P.ink;postMat.uniforms.aaK.value=P.aa;
   if(postMat.defines.HQ!==P.hq||postMat.defines.HATCH!==P.hatch){postMat.defines.HQ=P.hq;postMat.defines.HATCH=P.hatch;postMat.needsUpdate=true;}
@@ -1326,7 +1332,7 @@ function animate(){
   if(groups.taxa.visible)critters.forEach(c=>{const u=c.userData;c.visible=Math.abs(u.s.x-camera.position.x)+Math.abs(u.s.z-camera.position.z)<(window.GAME&&GAME.active?5:40);if(!c.visible)return;const a=t*u.sp+u.ph;const r=u.r*SF;c.position.set(u.s.x+Math.cos(a)*r,u.s.y+u.h*SF+Math.sin(t*3+u.ph)*.03*SF,u.s.z+Math.sin(a)*r);
     c.rotation.y=-a-(u.sp>0?Math.PI/2:-Math.PI/2);c.scale.setScalar(SF*2);if(u.fl)u.fl.rotation.y=Math.sin(t*14+u.ph)*.6;});
   if(groups.life.visible){
-    clouds.forEach(c=>{c.position.x+=c.userData.sp*dt;if(c.position.x>X1+4)c.position.x=X0-4;c.visible=c.position.distanceTo(camera.position)>6&&camera.position.y<c.position.y-1.5;});
+    clouds.forEach(c=>{c.position.x+=c.userData.sp*dt;if(c.position.x>X1+4)c.position.x=X0-4;c.visible=!(window.REAL&&REAL.on)&&c.position.distanceTo(camera.position)>6&&camera.position.y<c.position.y-1.5;});
     steam.forEach(s=>{const u=s.userData;const ph=(t*.28+u.ph)%1;s.position.set(u.x+Math.sin(ph*5+u.ph*9)*.12,u.y+.1+ph*1.6*u.sz,u.z);const sc=(.08+ph*.4)*u.sz*clamp(SF,.5,1.6);s.scale.set(sc,sc,1);s.material.opacity=.95*(1-ph);});
     updateFauna(t,dt);updateCaniche(t);
     cars.forEach(c=>{c.t=(c.t+c.sp*dt+1)%1;const p=c.road.getPointAt(c.t),q=c.road.getPointAt((c.t+.002*Math.sign(c.sp)+1)%1);c.g.position.copy(p);c.g.lookAt(q);c.g.rotateY(-Math.PI/2);c.g.scale.setScalar(GA?2.2:clamp(SF,.7,2.4));});
@@ -1350,7 +1356,7 @@ function boot(){
   {const gb=document.getElementById('gfx-btn');if(gb)gb.onclick=cycleGfx;addEventListener('keydown',e=>{if(e.code==='KeyG'&&!/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||''))cycleGfx();});}
   const ld=document.getElementById('loader');ld.style.opacity=0;setTimeout(()=>ld.remove(),600);
   animate();
-  window.WORLD={lakeSdf,los,losCached,rt,get terrain(){return terrain;},clouds,waterMats,riverMats,Q,steam,get TREELIST(){return window.TREELIST||[];},phColor,GFX,cycleGfx,WIND,winMat,LAKES,hemi,sun,postMat,scene,camera,controls,renderer,heightAt,infoAt,P,Y,SITES,byCode,LAKES,lakeSdf,nearestRiver,roadPaths,RIVERS,groups,toon,gradTex,TAXA,SMP,FIELD,PHOTOS,X0,X1,Z0,Z1,CRATER,VOLC,get caniche(){return caniche},gcol,HAB,phColor,rgbCss,layerOn,applyLayers};
+  window.WORLD={animals,birds,lakeSdf,los,losCached,rt,get terrain(){return terrain;},clouds,waterMats,riverMats,Q,steam,get TREELIST(){return window.TREELIST||[];},phColor,GFX,cycleGfx,WIND,winMat,LAKES,hemi,sun,postMat,scene,camera,controls,renderer,heightAt,infoAt,P,Y,SITES,byCode,LAKES,lakeSdf,nearestRiver,roadPaths,RIVERS,groups,toon,gradTex,TAXA,SMP,FIELD,PHOTOS,X0,X1,Z0,Z1,CRATER,VOLC,get caniche(){return caniche},gcol,HAB,phColor,rgbCss,layerOn,applyLayers};
   if(window.onWorldReady)window.onWorldReady();
   window.__ready=true;window.__cam=()=>{if(caniche){tween=null;controls.target.copy(caniche.position);camera.position.copy(caniche.position).add(new THREE.Vector3(.5,.35,.5));}};window.__look=(lat,lon,d,pol)=>{const q=P(lat,lon);flyTo(new THREE.Vector3(q[0],heightAt(q[0],q[1]),q[1]),d,pol,.01);};window.__dbg=()=>({photos:photoSprites.length,vis:groups.photos.visible,sp:photoSprites.slice(0,2).map(p=>[p.position.toArray(),p.scale.toArray()])});
 }

@@ -249,6 +249,20 @@ function makeLab(kind,c){const g=new T.Group(),gl=glass('#e6f6ff',.32),liq=tn(c|
     for(let k=0;k<9;k++){const co=new T.Mesh(new T.SphereGeometry(.003+Math.random()*.003,6,4),tn(['#ffffff','#ff7b00','#ffd23f'][k%3]));co.scale.y=.4;co.position.set((Math.random()-.5)*.06,-.028,-.02+(Math.random()-.5)*.06);g.add(co);}}
   else if(kind==='notebook'){const b=box(.1,.012,.14,tn(c||'#1d3557'));b.position.set(0,-.02,-.02);g.add(b);const pg=box(.094,.01,.134,tn('#fffdf5'));pg.position.set(.004,-.02,-.02);g.add(pg);
     const pen=cyl(.004,.004,.12,8,tn('#ffd23f'));pen.rotation.x=Math.PI/2;pen.position.set(.055,-.012,-.02);g.add(pen);}
+  else if(kind==='mouse'){const M=Math.random(),body=tn(c||'#1d1a2b'),btnM=tn(Math.random()<.5?c||'#1d1a2b':'#2a2a30');  // long axis y, buttons facing +z
+    const sh=new T.Mesh(new T.SphereGeometry(.03,18,12),body);sh.scale.set(M<.3?1.1:.95,1.9,M<.3?.55:.75);sh.position.y=-.06;g.add(sh);
+    [-1,1].forEach(s=>{const b=box(.026,.04,.006,btnM);b.position.set(s*.0135,-.024,M<.3?.013:.019);b.rotation.x=-.25;g.add(b);});
+    const wh=cyl(.006,.006,.005,12,tn('#3a3d44'));wh.rotation.z=Math.PI/2;wh.position.set(0,-.03,M<.3?.017:.024);g.add(wh);
+    if(M>.6){const rgb=box(.058,.004,.03,tn(['#00e5ff','#ff2d95','#7cff4f'][Math.floor(Math.random()*3)]));rgb.position.y=-.1;g.add(rgb);  // gamer: RGB strip and side buttons
+      [0,1].forEach(k=>{const sb=box(.004,.012,.007,tn('#9aa3ad'));sb.position.set(-.029,-.05-k*.015,.008);g.add(sb);});}
+    if(Math.random()<.5){const cb=cyl(.0015,.0015,.09,5,tn('#2a2a30'));cb.position.y=.03;g.add(cb);}}
+  else if(kind==='keyboard'){const K=Math.random(),cols=K<.35?19:K<.7?15:12,L=cols*.0165+.016,body=tn(c||'#1d1a2b');  // full / TKL / compact; held by one end, keys facing +z
+    const kb=box(.1,L,.016,body);kb.position.y=-L/2;g.add(kb);const rgb=Math.random()<.3,retro=!rgb&&Math.random()<.3;
+    const capC=retro?'#e8dcc0':Math.random()<.5?'#2a2a30':'#f4f0e6',RGB=['#ff2d95','#ffd23f','#7cff4f','#00e5ff','#3a86ff','#b15cff'];
+    const im=new T.InstancedMesh(new T.BoxGeometry(.013,.013,.008),tn('#ffffff'),cols*5+1),m4=new T.Matrix4(),col=new T.Color();let n=0;
+    for(let r=0;r<5;r++)for(let k=0;k<cols;k++){m4.makeTranslation(-.0375+r*.015,-.016-k*.0165,.01);im.setMatrixAt(n,m4);im.setColorAt(n,col.set(rgb?RGB[(r+k)%6]:k===0&&Math.random()<.6?c||capC:capC));n++;}
+    m4.makeScale(1,Math.min(6,cols-4)*1.2,1);m4.setPosition(.0375,-L/2,.01);im.setMatrixAt(n,m4);im.setColorAt(n,col.set(rgb?'#ffffff':capC));  // space bar
+    g.add(im);if(Math.random()<.5){const cb=cyl(.0017,.0017,.08,5,tn('#2a2a30'));cb.position.set(0,.035,0);g.add(cb);}}
   g.traverse(o=>{o.frustumCulled=false;});return g;}
 const LAB_KINDS=['thermometer','erlenmeyer','beaker','pasteur','micropipette','testtube','falcon','petri','notebook'];
 FPG.LAB_KINDS=LAB_KINDS;
