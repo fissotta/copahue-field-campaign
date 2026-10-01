@@ -1,0 +1,33 @@
+rules_version = '2';
+// Copahue Field Campaign: shared Hall of Fame.
+// Paste this in Firebase console > Firestore Database > Rules > Publish.
+// Anyone can read the ranking and add one valid score; nobody can edit or delete scores.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /scores/{id} {
+      allow read: if true;
+      allow create: if validScore(request.resource.data);
+      allow update, delete: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+function validScore(d) {
+  return d.keys().hasOnly(['name', 'score', 'sites', 'total', 'time', 'filtQ', 'probeQ', 'seqQ', 'rupt', 'ch', 'at', 'ts'])
+    && d.keys().hasAll(['name', 'score', 'sites', 'total', 'time', 'ts'])
+    && d.name is string && d.name.size() > 0 && d.name.size() <= 24
+    && d.score is int && d.score >= 0 && d.score <= 1000000
+    && d.sites is int && d.sites >= 0 && d.sites <= 99
+    && d.total is int && d.total >= 0 && d.total <= 99 && d.sites <= d.total
+    && d.time is int && d.time >= 0 && d.time <= 10000000
+    && (!('filtQ' in d) || (d.filtQ is int && d.filtQ >= 0 && d.filtQ <= 100))
+    && (!('probeQ' in d) || (d.probeQ is int && d.probeQ >= 0 && d.probeQ <= 100))
+    && (!('seqQ' in d) || (d.seqQ is int && d.seqQ >= 0 && d.seqQ <= 100))
+    && (!('rupt' in d) || (d.rupt is int && d.rupt >= 0 && d.rupt <= 999))
+    && (!('ch' in d) || (d.ch is int && d.ch >= 0 && d.ch <= 99))
+    && (!('at' in d) || (d.at is string && d.at.size() <= 10))
+    && d.ts == request.time;
+}

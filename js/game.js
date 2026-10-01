@@ -2860,9 +2860,17 @@ function showSiteCard(m){
     <div class="g-row"><button class="g-btn y" id="g-ok">KEEP GOING ➜</button></div>`,init(){$('#g-ok').onclick=closeModal;},onclose(){if(all)S.target='base';buildMissionList();}});
 }
 
-// ------------------------------------------------------------ HALL OF FAME (shared, persistent: artifact db)
+// ------------------------------------------------------------ HALL OF FAME (shared by everyone: Firebase Firestore, project copahue-ranking)
+// The web config below is public by design; what protects the board are the Firestore rules (firestore.rules in this repo: anyone may read and add a valid score, nobody may edit or delete).
+const FB_CONFIG={apiKey:"AIzaSyCWfdSbpuhaWyoJH9B0syuGG8D2qrzzvok",authDomain:"copahue-ranking.firebaseapp.com",projectId:"copahue-ranking",storageBucket:"copahue-ranking.firebasestorage.app",messagingSenderId:"330317071972",appId:"1:330317071972:web:ad0fc49c1d0d6dc8e6c171"};
+const FB_SDK='https://www.gstatic.com/firebasejs/10.12.2/';
 let DBP=null;
-function getDB(){return Promise.resolve(null);}
+function getDB(){if(DBP)return DBP;
+  const load=src=>new Promise((ok,ko)=>{const sc=document.createElement('script');sc.src=src;sc.onload=ok;sc.onerror=ko;document.head.appendChild(sc);});
+  DBP=Promise.race([(async()=>{if(!window.firebase)await load(FB_SDK+'firebase-app-compat.js');if(!firebase.firestore)await load(FB_SDK+'firebase-firestore-compat.js');
+      const app=firebase.apps.length?firebase.app():firebase.initializeApp(FB_CONFIG);return app.firestore();})(),
+    new Promise(r=>setTimeout(()=>r(null),8000))]).catch(e=>{console.warn('ranking offline',e);return null;});
+  return DBP;}
 const num=(v,a,b)=>{v=Number(v);return isFinite(v)?clamp(v,a,b):a;};
 function calcRun(lysis,pcr){
   const ss=S.samples;const avg=f=>ss.length?ss.reduce((a,s)=>a+f(s),0)/ss.length:0;
@@ -2878,24 +2886,31 @@ function boardHTML(rows,mine){
     const pic=(d.ch>=0&&d.ch<PORTRAITS.length)?`<img src="${PORTRAITS[d.ch|0]}" alt="" style="width:22px;height:26px;object-fit:cover;border:1.5px solid #1d1a2b;border-radius:4px;vertical-align:middle;margin-right:5px">`:'';
     return `<tr style="${me?'background:#c9f7d8;font-weight:700':''}"><td ${td}>${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td><td style="border:1.5px solid #1d1a2b;padding:3px 6px;white-space:nowrap">${pic}${esc(String(d.name||'Anonymous').slice(0,24))}${me?' ← you':''}</td><td ${td}><b>${num(d.score,0,1e6)|0}</b></td><td ${td}>${num(d.sites,0,99)|0}/${num(d.total,0,99)|0}</td><td ${td}>${fmtT(num(d.time,0,1e7))}</td><td ${td}>${num(d.filtQ,0,100)|0}%</td><td ${td}>${num(d.probeQ,0,100)|0}%</td><td ${td}>${num(d.seqQ,0,100)|0}%</td><td ${td}>${esc(String(d.at||'').slice(0,10))}</td></tr>`;}).join('')}</tbody></table></div>`;
 }
-// subscribe the board inside element `el`; returns an unsubscribe
+const fbWait=(p,ms=8000)=>Promise.race([p,new Promise((_,ko)=>setTimeout(()=>ko(Object.assign(new Error('timeout'),{code:'timeout'})),ms))]);
+function localBoard(el,getMine,why){let loc=[];try{loc=JSON.parse(localStorage.getItem('cfc_local_board')||'[]');}catch(e){}
+  el.innerHTML='<p class="note">'+(why?why+' ':'')+LX('Your best runs, saved in this browser:','Tus mejores partidas, guardadas en este navegador:')+'</p>'+boardHTML(loc.sort((a,b)=>b.d.score-a.d.score).slice(0,20),getMine());}
+// show the board inside element `el`; returns an unsubscribe (kept for the callers)
 async function mountBoard(el,getMine){
   const db=await getDB();
-  if(!db){let loc=[];try{loc=JSON.parse(localStorage.getItem('cfc_local_board')||'[]');}catch(e){}
-    el.innerHTML='<p class="note">Your best runs, saved in this browser:</p>'+boardHTML(loc.sort((a,b)=>b.d.score-a.d.score).slice(0,20),getMine());return ()=>{};}
-  el.innerHTML='<p class="note">Loading the lab ranking…</p>';
-  try{return db.collection('scores').orderBy('score','desc').limit(25).onSnapshot(sn=>{el.innerHTML=boardHTML(sn.docs.filter(d=>d.exists).map(d=>({id:d.id,d:d.data()})),getMine());},
-    e=>{el.innerHTML='<p class="note">The ranking is unavailable right now.</p>';});}catch(e){el.innerHTML='<p class="note">The ranking is unavailable right now.</p>';return ()=>{};}
+  if(!db){localBoard(el,getMine);return ()=>{};}
+  el.innerHTML='<p class="note">'+LX('Loading the ranking…','Cargando el ranking…')+'</p>';
+  try{const sn=await fbWait(db.collection('scores').orderBy('score','desc').limit(25).get({source:'server'}));
+    el.innerHTML='<p class="note">🌎 '+LX('Ranking of everyone who plays (top 25).','Ranking de todos los que juegan (25 mejores).')+'</p>'+boardHTML(sn.docs.map(d=>({id:d.id,d:d.data()})),getMine());}
+  catch(e){console.warn('ranking',e);localBoard(el,getMine,'⚠️ '+LX('The online ranking is not reachable right now.','El ranking en línea no responde ahora.'));}
+  return ()=>{};
 }
 async function submitRun(run,name){
   const rec=Object.assign({},run,{name:String(name||'Anonymous').trim().slice(0,24)||'Anonymous'});
+  ['score','sites','total','time','filtQ','probeQ','seqQ','rupt','ch'].forEach(k=>rec[k]=Math.round(num(rec[k],0,k==='score'?1e6:k==='time'?1e7:999)));
+  const local=id=>{let loc=[];try{loc=JSON.parse(localStorage.getItem('cfc_local_board')||'[]');}catch(e){}loc.push({id,d:rec});try{localStorage.setItem('cfc_local_board',JSON.stringify(loc.slice(-50)));}catch(e){}return id;};
   const db=await getDB();
-  if(!db){let loc=[];try{loc=JSON.parse(localStorage.getItem('cfc_local_board')||'[]');}catch(e){}const id='l'+Date.now();loc.push({id,d:rec});try{localStorage.setItem('cfc_local_board',JSON.stringify(loc.slice(-50)));}catch(e){}return id;}
-  const ref=db.collection('scores').doc();await ref.set(rec);return ref.id;
+  if(!db)return local('l'+Date.now());
+  const ref=db.collection('scores').doc();try{await fbWait(ref.set(Object.assign({},rec,{ts:firebase.firestore.FieldValue.serverTimestamp()})));}catch(e){console.warn('ranking save',e);return local('l'+Date.now());}
+  local(ref.id);return ref.id;
 }
 function openHall(){
   let unsub=()=>{};
-  openModal({title:'🏆 HALL OF FAME',meta:'Your best Copahue field campaigns on this device',col:'#ffd23f',html:`<div id="hf-b"></div>
+  openModal({title:'🏆 HALL OF FAME',meta:LX('The best Copahue field campaigns','Las mejores campañas de terreno en Copahue'),col:'#ffd23f',html:`<div id="hf-b"></div>
     <p class="note"><b>Score</b> = points from sampling, probe, filtration and the lab. <b>Filtr.</b> = filtration quality (torn membranes and slow filtering lower it) · <b>Probe</b> = how fast you got stable readings · <b>Seq.</b> = DNA extraction + library quality.</p>`,
     init(){mountBoard($('#hf-b'),()=>null).then(u=>{unsub=u;});},onclose(){unsub();}});
 }
@@ -2986,8 +3001,8 @@ function lab(){
         mountBoard($('#rs-board'),()=>mine).then(u=>{unsub=u;});
         $('#rs-send').onclick=async()=>{if(sent)return;sent=true;const b=$('#rs-send');b.disabled=true;$('#rs-msg').textContent='Saving…';
           try{mine=await submitRun(run,nm.value);AU.sfx.tada();$('#rs-msg').innerHTML='✔ You are on the board! Your row is highlighted.';nm.disabled=true;
-            const db=await getDB();if(!db){unsub();mountBoard($('#rs-board'),()=>mine).then(u=>{unsub=u;});}}
-          catch(e){sent=false;b.disabled=false;$('#rs-msg').textContent=(e&&e.code==='quota_exceeded')?'The board is full — ask the owner to clear old entries.':'Could not save (you may only have view access). Try again later.';}};},
+            unsub();mountBoard($('#rs-board'),()=>mine).then(u=>{unsub=u;});}
+          catch(e){sent=false;b.disabled=false;$('#rs-msg').textContent=(e&&e.code==='quota_exceeded')?'The board is full — ask the owner to clear old entries.':LX('Could not save to the online ranking. Check your connection and try again.','No se pudo guardar en el ranking en línea. Revisa tu conexión e intenta de nuevo.');}};},
       onclose(){unsub();}});
   }
 }
