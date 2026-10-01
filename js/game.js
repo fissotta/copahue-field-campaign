@@ -912,7 +912,9 @@ function updateWorldEnv(dt,active){
   {const C=Wd.camera,hG=C.position.y-Wd.heightAt(C.position.x,C.position.z);const tod=WX.tod,morn=tod<5?.3:tod<9.5?1:tod<11.5?1-(tod-9.5)/2:tod>18.5&&tod<22?.45:tod>=22?.3:0;
     u.mistK.value=clamp(Math.max(morn,Math.max(snow,rain)*.7),0,1)*clamp(1-(hG-.6)/2.4,0,1);u.cloudK.value=.5+Math.max(snow,rain)*.4;}
   Wd.sun.intensity=.78*(1-n*.55)*(1-.3*Math.max(snow,rain));
-  {const wm=gold*(1-Math.max(snow,rain));Wd.sun.color.setRGB(lerp(1,1,wm)*lerp(1,.62,n),lerp(1,.8,wm)*lerp(1,.72,n),lerp(1,.58,wm)*lerp(1,1,n));Wd.hemi.color.setRGB(1,lerp(.96,.86,wm),lerp(.84,.7,wm));}  // warm dawn/dusk light, cool moonlightWd.hemi.intensity=.5*(1-n*.35);
+  {const wm=gold*(1-Math.max(snow,rain));Wd.sun.color.setRGB(lerp(1,1,wm)*lerp(1,.62,n),lerp(1,.8,wm)*lerp(1,.72,n),lerp(1,.58,wm)*lerp(1,1,n));Wd.hemi.color.setRGB(1,lerp(.96,.86,wm),lerp(.84,.7,wm));}  // warm dawn/dusk light, cool moonlight
+  Wd.hemi.intensity=.5*(1-n*.45);
+  {const lum=1-n*.5*(1-.3*Math.max(snow,rain));[...Wd.waterMats,...(Wd.riverMats||[])].forEach(m=>{if(m.uniforms&&m.uniforms.lum)m.uniforms.lum.value=lum;});}  // unlit water and mud dim at night like everything else (they used to glow)
   const sa=(WX.tod-6)/12*Math.PI;Wd.sun.position.set(-40*Math.cos(sa),10+40*Math.max(.15,Math.sin(sa)),16);
   if(WX.beam){WX.beam.material.opacity=n*.3;WX.beam.visible=n>.05;WX.lamps.forEach(m=>{m.material.color.setRGB(1,.95*(n>.3?1:.8),n>.3?.75:.55);m.userData.glow.material.opacity=n*.85;m.userData.glow.visible=n>.05;});}
   if(pl.g&&pl.g.userData.hl){const H=pl.g.userData.hl,on=n>.05&&!pl.inTruck;H.beam.visible=H.glow.visible=on;H.beam.material.opacity=n*.32;H.glow.material.opacity=n*.9;H.bulb.material.color.setRGB(1,1,n>.3?.8:.6);}
@@ -974,9 +976,9 @@ function init(){
   Wd.controls.enabled=false;
   Wd.roadPaths.forEach(c=>c.getSpacedPoints(Math.ceil(c.getLength()/.04)).forEach(p=>roadPts.push([p.x,p.z])));
   labelsEl=$('#g-labels');
-  const bp=nearestRoad(...Wd.P(-37.8685,-71.0532));
-  base={x:bp[0]+.25,z:bp[1]-.12};base.g=makeBase([base.x,base.z]);
-  base.pad=makeBeacon('#ff4f3a');base.px=base.x+.36;base.pz=base.z;base.pad.position.set(base.px,Wd.heightAt(base.px,base.pz),base.pz);base.pad.scale.set(1.2,1,1.2);base.pad.userData.drop.visible=base.pad.userData.tip.visible=false;Wd.groups.static.add(base.pad);
+  const bp=nearestRoad(...Wd.P(-37.8685,-71.0585));
+  base={x:bp[0]-.18,z:bp[1]-.12};  // west of Ruta 26, between the road and the village (east of the road the shipping pad fell in the lake and pushed the LC beacon inland)base.g=makeBase([base.x,base.z]);
+  base.pad=makeBeacon('#ff4f3a');base.px=base.x-.02;base.pz=base.z+.34;base.pad.position.set(base.px,Wd.heightAt(base.px,base.pz),base.pz);base.pad.scale.set(1.2,1,1.2);base.pad.userData.drop.visible=base.pad.userData.tip.visible=false;Wd.groups.static.add(base.pad);
   base.lbl=mkLabel('MEL FIELD BASE<small>ship samples to sequencing</small>','glbl base');
   const RV0=Wd.RIVERS[0].P;const SPREAD={VA2:RV0[Math.min(4,RV0.length-1)],VA1:RV0[Math.min(8,RV0.length-1)]};
   M=MISSION.map(m=>{const s=Wd.byCode[m.c];const sp=SPREAD[m.c];const ap=sp?accessPoint(sp.x,sp.z):accessPoint(s.x,s.z);
@@ -1006,7 +1008,7 @@ function spreadSites(){
       const other=M.find(o=>o!==m&&Math.hypot(o.ax-m.ax,o.az-m.az)<SITE_MIN);
       if(other&&PINNED.includes(m.c)&&!PINNED.includes(other.c))continue;   // the other one moves instead
       const x0=m.ax,z0=m.az,E0=Wd.infoAt(x0,z0),rv0=Wd.nearestRiver(x0,z0),atRiver=rv0.d<.12,atLake=E0.dl<.3;
-      const okAt=(x,z)=>{if(!walkable(x,z))return false;const dl=Wd.infoAt(x,z).dl;return dl>.06&&(!atLake||atRiver||dl<.3);};
+      const okAt=(x,z)=>{if(!walkable(x,z))return false;const dl=Wd.infoAt(x,z).dl;return dl>.06&&(!atLake||atRiver||dl<.12);};  // lake sites stay right at the water's edge
       let best=null,bd=1e9;
       // 1) a river site slides along the rivers so the beacon stays at the water
       if(atRiver)[Wd.RIVERS[rv0.ri]].forEach(R=>{for(let k=0;k<R.P.length-1;k++)for(let f=0;f<1;f+=.2){const a=R.P[k],b=R.P[k+1];const x=a.x+(b.x-a.x)*f,z=a.z+(b.z-a.z)*f;const d=Math.hypot(x-x0,z-z0);
@@ -1179,7 +1181,7 @@ const PK=(()=>{
 const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacket:'#ff2d95',pants:'#1d1a2b',shoes:'#ffffff',h:.97},{f:0,skin:'#eecbb0',hair:'#d9dde8',style:'medium',top:'#111111',jacket:'#b15cff',pants:'#111111',shoes:'#ffffff',h:1.02},
     {f:1,skin:'#f3d6c2',hair:'#ffe066',style:'long',top:'#00e5ff',jacket:'#1d1a2b',pants:'#ffffff',shoes:'#ff2d95',h:.95},{f:0,skin:'#e8c4a6',hair:'#3a86ff',style:'short',top:'#ffffff',jacket:'#111111',pants:'#ff2d95',shoes:'#111111',h:1.03}];
   const IDOL_N=['Ji-woo','Min-jun','Seo-yeon','Tae-yang'];
-  const FREEZE=['breakfast','smoke','kpop','fall','pdi','dash','magic','karaoke','photo','taste','salsa','dance','seal','bino','read','yeta','mech','friend'];
+  const FREEZE=['breakfast','piano','smoke','kpop','fall','pdi','dash','magic','karaoke','photo','taste','salsa','dance','seal','bino','read','yeta','mech','friend'];
   // ---------- small helpers
   let _tx=null;function ptex(){if(!_tx){const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d');const g=x.createRadialGradient(16,16,0,16,16,15);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.5,'rgba(255,255,255,.8)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,32,32);_tx=new THREE.CanvasTexture(c);}return _tx;}
   const FX=[],TMP=[];
@@ -1268,7 +1270,7 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
   // ---------- texts
   const DESC={
     gustavo:L2('Gustavo walks faster, flails his arms like crazy and every so often sprints off a few metres… and zooms right back. He also keeps inviting you to the gym: he has a free pass!','Gustavo camina más rápido, mueve mucho los brazos y cada tanto sale corriendo unos metros… y vuelve volando. Además te invita al gimnasio a cada rato: ¡tiene un pase gratis!'),
-    abraham:L2('Every so often Abraham stops for breakfast. A full table appears out of nowhere.','Cada cierto rato Abraham para a desayunar. Aparece una mesa completa de la nada.'),
+    abraham:L2('Every so often Abraham stops for breakfast (a full table appears out of nowhere) and, in between, puts on a tailcoat to play a grand piano.','Cada cierto rato Abraham para a desayunar (aparece una mesa completa de la nada) y, entremedio, se pone frac para tocar un piano de cola.'),
     simon:L2('Simón is a bit clumsy: he may break the jerrycan, the probe sensor or the filtration glassware while sampling.','Simón es medio torpe: puede quebrar el bidón, el sensor de la sonda o el material de filtración durante el muestreo.'),
     tito:L2('Tito carries a magic compass that always points (with a sparkly trail) to the next sampling site. He also filters 4× faster.','Tito lleva una brújula mágica que siempre apunta (con un rastro brillante) al siguiente sitio de muestreo. Además filtra 4 veces más rápido.'),
     dilanaz:L2('Dilanaz takes smoke breaks chatting in Turkish, dreams of being a car mechanic, drives a faster truck and tunes it up for extra speed.','Dilanaz para a fumar hablando en turco, sueña con ser mecánica de autos, su camioneta anda más rápido y la afina para que corra aún más.'),
@@ -1333,7 +1335,7 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
   const PTYPE=[L2('📄 Paper','📄 Paper'),L2('📘 Undergrad thesis','📘 Tesis de pregrado'),L2('📕 PhD thesis','📕 Tesis de doctorado')];
   // ---------- actions
   function start(k,dur,extra){ps.act=Object.assign({k,t:0,dur,yaw:pl.yaw,g:pl.g,said:{}},extra||{});const A=ps.act,u=pl.g.userData;
-    if(['karaoke','photo','dance','salsa','seal'].includes(k)){const c=Wd.camera.position;A.yaw=cam.fp&&!pl.inTruck?cam.yaw+cam.dragYaw+2.45+Math.PI:Math.atan2(-(c.z-pl.z),c.x-pl.x);}  // in first person: face the show camera
+    if(['karaoke','photo','dance','salsa','seal','piano'].includes(k)){const c=Wd.camera.position;A.yaw=cam.fp&&!pl.inTruck?cam.yaw+cam.dragYaw+2.45+Math.PI:Math.atan2(-(c.z-pl.z),c.x-pl.x);}  // in first person: face the show camera
     if(X2[k]){X2[k].start(A,u);return;}
     if(k==='breakfast'){const f=[Math.cos(A.yaw),-Math.sin(A.yaw)];A.tab=tableModel();A.tab.position.set(pl.x,Wd.heightAt(pl.x,pl.z),pl.z);A.tab.rotation.y=A.yaw;Wd.scene.add(A.tab);
       puff(pl.x+f[0]*.1,pl.z+f[1]*.1);spark(pl.x+f[0]*.1,Wd.heightAt(pl.x,pl.z)+.12,pl.z+f[1]*.1,14);AU.sfx.voice(4,150);say(LX('🍳 Breakfast break!','🍳 ¡Pausa para el desayuno!'),2.8);}
@@ -1574,6 +1576,70 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
       A.sp=(A.sp||0)-dt;if(A.sp<=0){A.sp=.3;spark(pl.x,pl.g.position.y+.34,pl.z,2,pk([0xff2d95,0x00e5ff,0xffd23f]),.3,1,.035);}},
     pose(A,u,g){const b=A.t*104/60,s=Math.sin(b*Math.PI);g.rotation.y=A.yaw+Math.sin(b*Math.PI/2)*.25;u.armR.rotation.z=2.5+s*.08;u.armR.rotation.x=.25;u.armL.rotation.z=.6+Math.max(0,s)*1.8;u.legL.rotation.z=Math.max(0,s)*.2;u.legR.rotation.z=Math.max(0,-s)*.2;g.rotation.x=s*.08;g.position.y+=Math.abs(s)*.008;u.can.visible=false;},
     end(A){A.an.forEach(o=>Wd.scene.remove(o.g));if(A.tv){puff(A.tv.position.x,A.tv.position.z);Wd.scene.remove(A.tv);}if(A.g===pl.g){say(LX('Thank you, my babies! 🐾💖','¡Gracias, mis bebés! 🐾💖'),2.4);applause(2);}}};
+  // ---- Abraham: grand piano recital in a tailcoat (alternates with his breakfasts)
+  function pianoModel(){const g=new THREE.Group(),blk='#0d0d10';
+    // case outline seen from above (x = away from the pianist, z = across the keyboard): straight bass side, curved treble side, round tail
+    const sh=new THREE.Shape(),P=(x,z)=>[x,-z];sh.moveTo(...P(0,-.16));sh.lineTo(...P(.4,-.16));sh.quadraticCurveTo(...P(.47,-.16),...P(.46,-.07));
+    sh.bezierCurveTo(...P(.44,.0),...P(.3,-.01),...P(.2,.08));sh.quadraticCurveTo(...P(.13,.16),...P(.06,.16));sh.lineTo(...P(0,.16));sh.lineTo(...P(0,-.16));
+    const ext=(d)=>new THREE.ExtrudeGeometry(sh,{depth:d,bevelEnabled:false,curveSegments:14}).rotateX(-Math.PI/2);
+    const body=A_(g,ext(.055),blk,.12,.115,0);body.material.side=THREE.DoubleSide;
+    A_(g,ext(.004),'#5a3a1e',.12,.166,0).scale.set(.97,1,.97);                         // wooden soundboard inside
+    for(let k=0;k<9;k++){const s=A_(g,new THREE.BoxGeometry(.3-k*.018,.0015,.002),'#c9a24a',.29-k*.006,.171,-.12+k*.026);s.material.emissive&&s.material.emissive.set('#000');}  // strings
+    const lid=new THREE.Group();lid.position.set(.12,.172,-.16);lid.rotation.x=-.62;g.add(lid);A_(lid,ext(.004),blk,0,0,.16);g.userData.lid=lid;   // lid hinged on the bass side
+    const stick=A_(g,new THREE.CylinderGeometry(.002,.002,.16,5),blk,.3,.235,.03);stick.rotation.x=-.5;
+    A_(g,new THREE.BoxGeometry(.06,.026,.32),blk,.105,.13,0);                            // keybed
+    A_(g,new THREE.BoxGeometry(.045,.008,.3),'#f6f3ea',.1,.147,0);                       // white keys
+    for(let i=0;i<36;i++){const n=i%7;if(n===2||n===6)continue;A_(g,new THREE.BoxGeometry(.028,.007,.0045),'#111',.11,.153,-.145+i*.0083+.004);}
+    for(let i=0;i<36;i++)A_(g,new THREE.BoxGeometry(.044,.0004,.0006),'#9a9a9a',.1,.1513,-.145+i*.0083);   // key gaps
+    [-1,1].forEach(s=>A_(g,new THREE.BoxGeometry(.06,.03,.012),blk,.105,.15,.166*s));     // cheek blocks
+    const desk=A_(g,new THREE.BoxGeometry(.004,.05,.14),blk,.135,.19,0);desk.rotation.z=.25;
+    const sheet=A_(g,new THREE.PlaneGeometry(.1,.045),'#fbf7ea',.131,.193,0,true);sheet.rotation.set(0,-Math.PI/2,0);sheet.rotation.order='YXZ';sheet.rotation.x=.25;sheet.material.side=THREE.DoubleSide;
+    [[.14,-.13],[.14,.13],[.43,-.08]].forEach(p=>{A_(g,new THREE.CylinderGeometry(.009,.007,.115,8),blk,p[0],.058,p[1]);A_(g,new THREE.SphereGeometry(.008,6,4),'#c9a24a',p[0],.004,p[1]);});
+    const lyre=A_(g,new THREE.BoxGeometry(.012,.1,.03),blk,.15,.06,0);A_(g,new THREE.BoxGeometry(.03,.004,.008),'#c9a24a',.135,.01,-.008);A_(g,new THREE.BoxGeometry(.03,.004,.008),'#c9a24a',.135,.01,.008);
+    A_(g,new THREE.CylinderGeometry(.004,.005,.03,8),'#f4efe0',.37,.2,-.13);const fl=A_(g,new THREE.SphereGeometry(.004,6,5),0xffc24a,.37,.219,-.13,true);fl.scale.set(.7,1.5,.7);g.userData.flame=fl;  // candle on the lid edge
+    // bench
+    A_(g,new THREE.BoxGeometry(.07,.016,.16),'#0d0d10',-.005,.068,0);A_(g,new THREE.BoxGeometry(.066,.008,.155),'#7a1020',-.005,.08,0);
+    [[-.03,-.07],[-.03,.07],[.02,-.07],[.02,.07]].forEach(p=>A_(g,new THREE.CylinderGeometry(.004,.004,.06,6),'#0d0d10',p[0],.03,p[1]));
+    return g;}
+  // tailcoat worn over the character's clothes (local person coordinates, before the 1.7 scale)
+  function fracProp(u,g){u.pk=u.pk||{};if(u.pk.frac)return u.pk.frac;const p=new THREE.Group(),Q=Wd.Q,blk=Wd.toon('#141418'),wht=Wd.toon('#fbfbf6');
+    const sh=(S,m)=>{const o=Q.loft(S,10,'#ffffff',true);o.material=m;return o;};
+    p.add(sh([[0,.084,.0176,.0222],[0,.104,.0158,.0192],[.001,.124,.018,.0218],[0,.142,.0164,.0244],[0,.149,.012,.0175],[0,.1525,.0078,.0088]],blk));
+    const vest=A_(p,new THREE.BoxGeometry(.004,.05,.013),'#fbfbf6',.0178,.123,0);vest.material=wht;
+    [-1,1].forEach(s=>{const l=A_(p,new THREE.BoxGeometry(.003,.04,.006),'#141418',.0186,.128,.0068*s);l.rotation.x=.32*s;});   // lapels
+    [-1,1].forEach(s=>{const b=A_(p,new THREE.ConeGeometry(.0035,.007,4),'#141418',.0102,.1495,.0035*s);b.rotation.x=-Math.PI/2*s;});A_(p,new THREE.SphereGeometry(.0018,5,4),'#141418',.0105,.1495,0); // bow tie
+    for(let k=0;k<3;k++)A_(p,new THREE.SphereGeometry(.0011,4,3),'#141418',.0201,.132-k*.009,0);
+    const tails=[-1,1].map(s=>{const t=A_(p,new THREE.BoxGeometry(.0028,.062,.015),'#141418',-.0175,.06,.0078*s);t.rotation.x=.08*s;return t;});p.userData.tails=tails;
+    const sleeve=()=>{const o=sh([[0,.0045,.0071,.0071],[0,-.028,.0061,.0063],[.0008,-.033,.0059,.006],[0,-.054,.005,.0051]],blk);const c=new THREE.Mesh(new THREE.CylinderGeometry(.0052,.0052,.004,8),wht);c.position.y=-.057;o.add(c);return o;};
+    const sl=[sleeve(),sleeve()];u.armL.add(sl[0]);u.armR.add(sl[1]);
+    const trouser=()=>sh([[0,.0045,.0093,.0093],[.001,-.03,.0073,.0075],[.0015,-.036,.0075,.0077],[0,-.059,.0057,.006]],blk);const tr=[trouser(),trouser()];u.legL.add(tr[0]);u.legR.add(tr[1]);
+    p.userData.parts=[...sl,...tr];g.add(p);p.visible=false;u.pk.frac=p;
+    const vis=p.visible;Object.defineProperty(p,'shown',{set(v){p.visible=v;p.userData.parts.forEach(o=>o.visible=v);},get(){return p.visible;}});p.shown=vis;return p;}
+  // Für Elise (Beethoven, public domain): [midi, 16ths, left-hand chord]
+  const ELISE=(()=>{const a=[[76,1],[75,1],[76,1],[75,1],[76,1],[71,1],[74,1],[72,1],[69,2,'A'],[0,1],[60,1],[64,1],[69,1],[71,2,'E'],[0,1]];
+    return [...a,[64,1],[68,1],[71,1],[72,2,'A'],[0,1],[64,1],...a,[64,1],[72,1],[71,1],[69,4,'A'],[0,2]];})();
+  function pianoMusic(dur){const ev={};let s=0;ELISE.forEach(e=>{ev[s]=e;s+=e[1];});const len=s;
+    seqMusic(dur,.55,72,(i,t,s16,T)=>{const e=ev[i%len];if(!e)return;const pn=(n,g,d)=>{const f=T.fq(n);T.osc('triangle',f,t,d,g);T.osc('sine',f*2,t,d*.5,g*.25);T.osc('sine',f,t,.05,g*.4);};
+      if(e[0])pn(e[0],.13,e[1]*s16*2+.5);
+      if(e[2]){const L=e[2]==='A'?[45,52,57]:[40,52,56];L.forEach((n,k)=>{const tt=t+k*s16;const f=T.fq(n);T.osc('triangle',f,tt,s16*4,.1);T.osc('sine',f*2,tt,s16*2,.03);});}});}
+  const RECITAL=[L2('🎹 Für Elise. Dedicated to the Río Agrio.','🎹 Para Elisa. Dedicada al Río Agrio.'),L2('🎹 Silence in the hall, please… I mean, in the steppe.','🎹 Silencio en la sala, por favor… digo, en la estepa.'),L2('🎹 A grand piano at 2,000 m: the logistics were a nightmare.','🎹 Un piano de cola a 2.000 m: la logística fue una pesadilla.'),
+    L2('🎹 The acoustics of this volcano are incredible.','🎹 La acústica de este volcán es increíble.'),L2('🎹 After the recital, breakfast. Obviously.','🎹 Después del recital, desayuno. Obvio.')];
+  X2.piano={start(A,u){A.yaw+=1.25;const f=[Math.cos(A.yaw),-Math.sin(A.yaw)];const gy=Wd.heightAt(pl.x,pl.z);
+      A.pn=pianoModel();A.pn.position.set(pl.x-f[0]*.005,gy,pl.z-f[1]*.005);A.pn.rotation.y=A.yaw;A.pn.scale.setScalar(.001);Wd.scene.add(A.pn);
+      fracProp(u,pl.g).shown=true;puff(pl.x,pl.z);spark(pl.x,gy+.2,pl.z,26,0xffffff,.6,1.3);AU.sfx.tada();say(LX('🎩 Excuse me… recital time.','🎩 Permiso… es hora del recital.'),2.4);},
+    tick(A,dt,t){const p=A.pn;const k=Math.min(1,A.t/.45),e=1-Math.pow(1-k,3);p.scale.setScalar(Math.max(.001,A.t>A.dur-.35?(A.dur-A.t)/.35:e));
+      if(once(A,'m',.9)){pianoMusic(A.dur-1.2);}
+      if(once(A,'a',2.2))say(pk(RECITAL)(),3.4);if(once(A,'b',6.4))say(pk([LX('🎶 …and with feeling…','🎶 …y con sentimiento…'),LX('🎶 Pianissimo… now FORTISSIMO!','🎶 Pianissimo… ¡ahora FORTISSIMO!'),LX('🎶 *closes his eyes*','🎶 *cierra los ojos*')]),2.6);
+      const fl=p.userData.flame;if(fl)fl.scale.set(.7,1.5+Math.sin(t*23)*.25,.7);
+      A.nt=(A.nt||0)-dt;if(A.nt<=0&&A.t>1&&A.t<A.dur-1){A.nt=R(.25,.55);const f=[Math.cos(A.yaw),-Math.sin(A.yaw)],sd=[Math.sin(A.yaw),Math.cos(A.yaw)],r=R(-.3,.3);
+        const x=pl.x+f[0]*.25+sd[0]*r,z=pl.z+f[1]*.25+sd[1]*r;npcSay(pk(['♪','♫','♬','𝄞']),[x,Wd.heightAt(x,z)+R(.3,.45),z],1);}},
+    pose(A,u,g,t){g.rotation.y=A.yaw;g.position.y-=.05;u.legL.rotation.z=1.4;u.legR.rotation.z=1.35+Math.max(0,Math.sin(t*2.6))*.12;   // right foot on the pedal
+      const pl2=A.t>1&&A.t<A.dur-1;u.armL.rotation.z=1.15+(pl2?Math.sin(t*11)*.06:0);u.armR.rotation.z=1.15+(pl2?Math.sin(t*13+1)*.07:0);
+      u.armL.rotation.x=pl2?-.12+Math.sin(t*1.7)*.18:0;u.armR.rotation.x=pl2?.12+Math.sin(t*2.1+2)*.16:0;g.rotation.x=pl2?Math.sin(t*1.4)*.07:0;
+      u.can.visible=false;u.probe.visible=false;},
+    end(A){if(A.pn){puff(A.pn.position.x,A.pn.position.z);Wd.scene.remove(A.pn);A.pn.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});}
+      const u=A.g&&A.g.userData;if(u&&u.pk&&u.pk.frac)u.pk.frac.shown=false;
+      if(A.g===pl.g){applause(2.6);say(LX('🙇 Thank you, thank you. Now… breakfast? I mean, sampling.','🙇 Gracias, gracias. Ahora… ¿desayuno? Digo, a muestrear.'),2.8);}}};
   // ---- Catalina: photo shoot with flashes and an extravagant outfit
   const POSES=[[2.9,2.9,.2,-.2,0],[2.2,.3,0,.5,.6],[1.5,1.5,.4,.4,-.6],[3,.8,-.3,0,1.2],[.9,2.6,0,.6,-1.2],[2.6,2.6,.5,.5,3.14]];
   X2.photo={start(A,u){prop(u,pl.g,'glam').visible=true;puff(pl.x,pl.z);spark(pl.x,pl.g.position.y+.25,pl.z,26,undefined,.6,1.3);AU.sfx.tada();say(LX('💅 Wait wait wait… PHOTO TIME!','💅 Espera espera espera… ¡HORA DE LA FOTO!'),2.2);A.nf=.8;A.pi=0;},
@@ -1930,7 +1996,7 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
     const foot=!pl.inTruck&&!WX.block&&pl.fill<=0,moving=!pl.inTruck&&inputAxes().some(a=>Math.abs(a)>.05);
     if(!ps.act){const tk=c=>{if(c){ps.next-=dt;return ps.next<=0;}return false;};
       if(k==='gustavo'&&tk(foot&&pl.carry===0)){ps.next=R(10,18);start('dash',6,{ox:pl.x,oz:pl.z,ph:'out',d:0,len:R(.45,.7),yaw:Math.random()*6.283});say(pk([LX('💨 Be right back!','💨 ¡Voy y vuelvo!'),LX('🏃 Wheee!','🏃 ¡Wiiii!'),LX('💨 I forgot something!','💨 ¡Se me olvidó algo!')]),1.4);AU.sfx.voice(3,260);}
-      else if(k==='abraham'&&tk(foot&&pl.carry===0)){ps.next=R(24,38);start('breakfast',6.5);}
+      else if(k==='abraham'&&tk(foot&&pl.carry===0)){ps.next=R(24,38);ps.abP=!ps.abP;if(ps.abP)start('breakfast',6.5);else start('piano',11);}  // breakfast and piano recital, one after the other
 
       else if(k==='dilanaz'&&tk(foot&&pl.carry===0)){ps.next=R(24,36);start('smoke',7.6);}
       else if(k==='camila'&&tk(foot&&pl.carry===0)){ps.next=R(30,45);start('kpop',8.5);}
@@ -2533,12 +2599,52 @@ function showTitle(){
      const c=$('#g-cont');if(c)c.onclick=()=>{Object.assign(S,{sites:sv.sites||{},samples:sv.samples||[],score:sv.score||0,t:sv.t||0,shipped:!!sv.shipped,quakeAt:Math.max(sv.quakeAt||QUAKE_AT,(sv.t||0)+60),petted:!!sv.petted});clearEruption();clearKits();(sv.kits||[]).forEach(k=>addKit(k[0],k[1]));resetPositions();openPicker(start);};}});
 }
 function start(){closeModal();mode='play';AU.init();setTimeout(()=>setCharacter(charIdx),900);setTimeout(()=>AU.sfx.voice(10,170),300);buildMissionList();toast('🛻 Welcome to Caviahue! Pick a site from the <b>MISSION</b> list (or follow the arrow). Hike sites 🥾 are on the volcano.',false,5000);}
-function showHelp(){openModal({title:'HOW TO SAMPLE',col:'#00bbf9',html:`<ol style="margin:0;padding-left:20px">
- <li><b>Drive</b> close to a beacon. Park and press <kbd>E</kbd> to get out. If the truck is more than ~1.8 km away (e.g. on the volcano), a portable kit is set up where you arrive.</li>
- <li>At the beacon <b>hold</b> <kbd>E</kbd> to fill the 10 L jerrycan, walk to the station (truck tailgate or kit) and press <kbd>E</kbd> to pour. Twice → 20 L.</li>
- <li>At the beacon press <kbd>Q</kbd>: lower the probe with <kbd>SPACE</kbd>, keep it in the green depth band until readings stabilise, then <b>RECORD</b>.</li>
- <li>At the station press <kbd>E</kbd>: hold <kbd>SPACE</kbd> to pump, keep the vacuum gauge in the green. Swap clogged membranes <kbd>R</kbd>, empty the flask <kbd>F</kbd>. 20 L through 0.45 µm, then the filtrate through 0.22 µm.</li>
- <li>Back at the <b>MEL Field Base</b> (Caviahue): extract DNA, build libraries and sequence on the Illumina.</li></ol>`});}
+function showHelp(){if(modal&&modal.help){closeModal();return;}
+  const K=(k,en,es)=>`<tr><td style="white-space:nowrap;padding:3px 10px 3px 0;vertical-align:top">${k.split(' ').map(x=>x==='/'||x==='+'?x:`<kbd>${x}</kbd>`).join(' ')}</td><td style="padding:3px 0">${LX(en,es)}</td></tr>`;
+  const H=(en,es)=>`<tr><td colspan="2" style="padding:10px 0 3px;font-family:Bangers,sans-serif;font-size:18px;letter-spacing:.5px;color:#1d1a2b">${LX(en,es)}</td></tr>`;
+  openModal({help:true,title:LX('COMMANDS & HELP','COMANDOS Y AYUDA'),meta:LX('Press <kbd>H</kbd> or <kbd>Esc</kbd> to close','Pulsa <kbd>H</kbd> o <kbd>Esc</kbd> para cerrar'),col:'#00bbf9',key:c=>{if(c==='KeyH')closeModal();},html:`
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 26px;font-size:14px;line-height:1.3">
+ <table style="border-collapse:collapse">
+  ${H('Moving','Moverse')}
+  ${K('W A S D / ↑ ↓ ← →','Walk / drive','Caminar / manejar')}
+  ${K('Space','Jump (on foot)','Saltar (a pie)')}
+  ${K('Shift','Turbo (in a vehicle)','Turbo (en vehículo)')}
+  ${K('B','Horn','Bocina')}
+  ${K('Click','Capture the mouse to look around (Esc releases it)','Capturar el mouse para mirar (Esc lo suelta)')}
+  ${H('Camera & view','Cámara y vista')}
+  ${K('V','First / third person','Primera / tercera persona')}
+  ${K('C','Reset camera','Reiniciar cámara')}
+  ${K('M','Map view','Vista de mapa')}
+  ${K('Shift + M','Explore mode','Modo explorar')}
+  ${K('O','Realistic / comic look','Look realista / cómic')}
+  ${K('G','Graphics quality','Calidad gráfica')}
+  ${K('K','Photo mode','Modo foto')}
+ </table>
+ <table style="border-collapse:collapse">
+  ${H('Sampling','Muestreo')}
+  ${K('E','Get in/out of the truck, fill and pour the jerrycan (hold), filter','Subir/bajar de la camioneta, llenar y vaciar el bidón (mantener), filtrar')}
+  ${K('Q','Multiparameter probe','Sonda multiparamétrica')}
+  ${K('Space','Lower the probe / pump the vacuum (hold)','Bajar la sonda / bombear vacío (mantener)')}
+  ${K('R','Swap a clogged membrane','Cambiar membrana tapada')}
+  ${K('F','Empty the flask','Vaciar el matraz')}
+  ${K('Enter','Main button of any window','Botón principal de cualquier ventana')}
+  ${H('Game','Juego')}
+  ${K('N','Next sampling site','Siguiente sitio de muestreo')}
+  ${K('J / Tab','Collapse the mission list','Minimizar la lista de misiones')}
+  ${K('P','Next character','Siguiente personaje')}
+  ${K('L','New look','Nuevo look')}
+  ${K('U','Sound level','Nivel de sonido')}
+  ${K('H','This help','Esta ayuda')}
+  ${K('Esc','Close windows','Cerrar ventanas')}
+ </table></div>
+ <div style="margin-top:12px;padding-top:8px;border-top:2px dashed #1d1a2b55;font-size:13.5px">
+ <b>${LX('How to sample','Cómo muestrear')}</b>
+ <ol style="margin:4px 0 0;padding-left:20px">
+ <li>${LX('<b>Drive</b> close to a beacon 📍. Park and press <kbd>E</kbd> to get out. If the truck is more than ~1.8 km away (e.g. on the volcano), a portable kit is set up where you arrive.','<b>Maneja</b> hasta una baliza 📍. Estaciona y pulsa <kbd>E</kbd> para bajarte. Si la camioneta queda a más de ~1,8 km (p. ej. en el volcán), se arma un kit portátil donde llegues.')}</li>
+ <li>${LX('At the beacon <b>hold</b> <kbd>E</kbd> to fill the 10 L jerrycan, walk to the station (truck tailgate or kit) and press <kbd>E</kbd> to pour. Twice → 20 L.','En la baliza <b>mantén</b> <kbd>E</kbd> para llenar el bidón de 10 L, camina a la estación (pick-up o kit) y pulsa <kbd>E</kbd> para vaciarlo. Dos veces → 20 L.')}</li>
+ <li>${LX('At the beacon press <kbd>Q</kbd>: lower the probe with <kbd>SPACE</kbd>, keep it in the green depth band until readings stabilise, then <b>RECORD</b>.','En la baliza pulsa <kbd>Q</kbd>: baja la sonda con <kbd>ESPACIO</kbd>, mantenla en la franja verde hasta que se estabilice y <b>REGISTRA</b>.')}</li>
+ <li>${LX('At the station press <kbd>E</kbd>: hold <kbd>SPACE</kbd> to pump, keep the vacuum gauge in the green. Swap clogged membranes <kbd>R</kbd>, empty the flask <kbd>F</kbd>. 20 L through 0.45 µm, then the filtrate through 0.22 µm.','En la estación pulsa <kbd>E</kbd>: mantén <kbd>ESPACIO</kbd> para bombear con el vacío en verde. Cambia membranas tapadas con <kbd>R</kbd>, vacía el matraz con <kbd>F</kbd>. 20 L por 0,45 µm y luego el filtrado por 0,22 µm.')}</li>
+ <li>${LX('Back at the <b>MEL Field Base</b> (Caviahue): extract DNA, build libraries and sequence on the Illumina.','De vuelta en la <b>Base MEL</b> (Caviahue): extrae ADN, prepara librerías y secuencia en el Illumina.')}</li></ol></div>`});}
 
 // ------------------------------------------------------------ PROBE mini-game
 function openProbe(m){

@@ -92,7 +92,7 @@ const ROADS=[
 ].map(r=>r.map(p=>P(p[0],p[1])));
 const LG=GEO.lake;const LSDF=(()=>{const b=atob(LG.b64);const a=new Float32Array(b.length);for(let i=0;i<a.length;i++){let v=b.charCodeAt(i);if(v>127)v-=256;a[i]=v/50;}
   // Lake Caviahue grown a little (up to LAKE_GROW) so the boat has room, but not near Ruta 26, which hugs the shore
-  const LAKE_GROW=.13,segs=[];ROADS.forEach(R=>{for(let k=0;k<R.length-1;k++)segs.push([R[k],R[k+1]]);});
+  const LAKE_GROW=.19,segs=[];ROADS.forEach(R=>{for(let k=0;k<R.length-1;k++)segs.push([R[k],R[k+1]]);});
   for(let j=0;j<LG.nz;j++)for(let i=0;i<LG.nx;i++){const n=j*LG.nx+i;if(a[n]>LAKE_GROW+.3)continue;const x=LG.x0+i*LG.res,z=LG.z0+j*LG.res;let rd=1e9;
     for(const [p,q] of segs){const bx=q[0]-p[0],bz=q[1]-p[1];const t=clamp(((x-p[0])*bx+(z-p[1])*bz)/(bx*bx+bz*bz),0,1);rd=Math.min(rd,Math.hypot(p[0]+bx*t-x,p[1]+bz*t-z));}
     a[n]-=LAKE_GROW*smooth(.12,.4,rd);}
@@ -294,9 +294,9 @@ function buildSlab(){
 // water with animated shader
 const waterMats=[];
 function waterMaterial(col){
-  const m=new THREE.ShaderMaterial({uniforms:{time:{value:0},col:{value:new THREE.Color(col)},glow:{value:0},realK:{value:0},sunW:{value:new THREE.Vector3(0,1,0)},tRefl:{value:null},reflM:{value:new THREE.Matrix4()},reflY:{value:-99},reflOn:{value:0}},
+  const m=new THREE.ShaderMaterial({uniforms:{time:{value:0},lum:{value:1},col:{value:new THREE.Color(col)},glow:{value:0},realK:{value:0},sunW:{value:new THREE.Vector3(0,1,0)},tRefl:{value:null},reflM:{value:new THREE.Matrix4()},reflY:{value:-99},reflOn:{value:0}},
     vertexShader:`attribute float sd;uniform float time,realK;varying float vSd;varying vec3 vW;void main(){vSd=sd;vec4 w=modelMatrix*vec4(position,1.);if(realK>.5){float k=smoothstep(0.,.03,-sd+.012);w.y+=(sin(w.x*38.+time*1.7)*.5+sin(w.z*31.-time*1.3+w.x*9.)*.35+sin((w.x+w.z)*63.+time*2.6)*.15)*.0032*k;}vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
-    fragmentShader:`uniform float time,glow,realK,reflY,reflOn;uniform vec3 col,sunW;uniform sampler2D tRefl;uniform mat4 reflM;varying vec3 vW;varying float vSd;
+    fragmentShader:`uniform float time,glow,realK,reflY,reflOn,lum;uniform vec3 col,sunW;uniform sampler2D tRefl;uniform mat4 reflM;varying vec3 vW;varying float vSd;
       float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
       float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
       void main(){vec2 p=vW.xz*3.;float w=n(p+vec2(time*.35,time*.2))+.5*n(p*2.3-vec2(time*.5,0.));
@@ -311,7 +311,7 @@ function waterMaterial(col){
           vec3 N=normalize(vec3((h0-hx)*.9-(cos(vW.x*38.+time*1.7)*38.*.5+cos((vW.x+vW.z)*63.+time*2.6)*63.*.15+cos(vW.z*31.-time*1.3+vW.x*9.)*9.*.35)*.0032,1.,(h0-hz)*.9-(cos(vW.z*31.-time*1.3+vW.x*9.)*31.*.35+cos((vW.x+vW.z)*63.+time*2.6)*63.*.15)*.0032));float F=.02+.98*pow(1.-max(dot(N,V),0.),5.);vec3 Rr=reflect(-V,N);vec3 sky=mix(vec3(.72,.84,.97),vec3(.18,.38,.78),smoothstep(0.,.6,Rr.y));
           if(reflOn>.5&&abs(vW.y-reflY)<.03){vec4 rp=reflM*vec4(vW+vec3(N.x,0.,N.z)*.06,1.);vec2 ru=rp.xy/rp.w*.5+.5;if(ru.x>0.&&ru.x<1.&&ru.y>0.&&ru.y<1.){vec4 rc=texture2D(tRefl,ru);sky=mix(sky,rc.rgb,.92);}}
           vec3 base=col*mix(.35,.6,smoothstep(.0,.012,.012-vSd));vec3 wc=mix(base,sky,clamp(F*1.35+.08,0.,1.))+vec3(1.,.95,.85)*pow(max(dot(Rr,sunW),0.),260.)*5.;c=mix(wc,vec3(.95),foam*.8)+col*glow*.6;}
-        gl_FragColor=vec4(c,1.);}`});
+        gl_FragColor=vec4(c*lum,1.);}`});
   waterMats.push(m);return m;
 }
 function buildLakes(){
@@ -358,9 +358,9 @@ function buildRivers(){
     }
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));g.setAttribute('color',new THREE.Float32BufferAttribute(c,3));
     g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);
-    const m=new THREE.ShaderMaterial({uniforms:{time:{value:0},realK:{value:0},sunW:{value:new THREE.Vector3(0,1,0)}},vertexColors:true,
+    const m=new THREE.ShaderMaterial({uniforms:{time:{value:0},lum:{value:1},realK:{value:0},sunW:{value:new THREE.Vector3(0,1,0)}},vertexColors:true,
       vertexShader:`varying vec3 vC;varying vec2 vU;varying vec3 vW;void main(){vC=color;vU=uv;vW=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-      fragmentShader:`uniform float time,realK;uniform vec3 sunW;varying vec3 vC;varying vec2 vU;varying vec3 vW;
+      fragmentShader:`uniform float time,realK,lum;uniform vec3 sunW;varying vec3 vC;varying vec2 vU;varying vec3 vW;
         float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
         float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
         void main(){float lane=abs(vU.y-.5)*2.;vec2 fp=vec2(vU.x*9.-time*1.1,vU.y*4.);float w=n(fp*2.)*.6+n(fp*5.+vec2(-time*.9,1.3))*.4;
@@ -371,7 +371,7 @@ function buildRivers(){
         c=mix(c,vC*.5,smoothstep(.93,1.,lane)*.6);
         if(realK>.5){vec3 V=normalize(cameraPosition-vW);vec3 N=normalize(vec3((w-.5)*.35,1.,(n(fp*5.+1.7)-.5)*.35));float F=.02+.98*pow(1.-max(dot(N,V),0.),5.);vec3 Rr=reflect(-V,N);
           vec3 sky=mix(vec3(.72,.84,.97),vec3(.2,.4,.8),smoothstep(0.,.6,Rr.y));vec3 base=vC*(.5+.18*lane);vec3 wc=mix(base,sky,clamp(F,0.,.7))+vec3(1.,.95,.85)*pow(max(dot(Rr,sunW),0.),200.)*4.;c=mix(wc,vec3(.95),foam*.7);}
-        gl_FragColor=vec4(c,1.);}`});
+        gl_FragColor=vec4(c*lum,1.);}`});
     m.side=THREE.DoubleSide;m.polygonOffset=true;m.polygonOffsetFactor=-3;m.polygonOffsetUnits=-3;riverMats.push(m);const mesh=new THREE.Mesh(g,m);mesh.renderOrder=2;groups.rivers.add(mesh);
     // mid-point label anchor
     r.mid=pts[Math.floor(pts.length*(r.n==='Río Agrio Inferior'?.3:r.approx?.35:.5))];
@@ -686,11 +686,11 @@ function buildCaviahueExtras(){
 // Termas de Copahue: complejo termal y centro médico de balneoterapia
 // Chancho-Có solfatara field: grey boiling-mud pools and yellow/white sulfur crusts draped on the ground
 function buildSolfataras(){const C=P(-37.8165,-71.166);
-  const mud=new THREE.ShaderMaterial({uniforms:{time:{value:0}},polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,
+  const mud=new THREE.ShaderMaterial({uniforms:{time:{value:0},lum:{value:1}},polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,
     vertexShader:'varying vec2 vU;void main(){vU=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader:'uniform float time;varying vec2 vU;float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}void main(){vec2 p=vU-.5;float r=length(p)*2.;if(r>1.)discard;vec3 c=mix(vec3(.46,.45,.43),vec3(.33,.32,.31),smoothstep(.2,.95,r));'+
+    fragmentShader:'uniform float time,lum;varying vec2 vU;float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}void main(){vec2 p=vU-.5;float r=length(p)*2.;if(r>1.)discard;vec3 c=mix(vec3(.46,.45,.43),vec3(.33,.32,.31),smoothstep(.2,.95,r));'+
       'vec2 g=floor(vU*7.);float cell=h(g);vec2 f=fract(vU*7.)-.5;float ph=fract(time*.35+cell*9.);float bub=smoothstep(.34*ph,.3*ph,length(f))*step(.55,cell)*(1.-ph);c=mix(c,vec3(.62,.61,.58),bub);'+
-      'float ring=abs(fract(r*3.-time*.5)-.5);c=mix(c,c*.8,smoothstep(.06,.0,ring)*.5*(1.-r));c=mix(c,vec3(.8,.72,.35),smoothstep(.88,1.,r)*.7);gl_FragColor=vec4(c,1.);}'});
+      'float ring=abs(fract(r*3.-time*.5)-.5);c=mix(c,c*.8,smoothstep(.06,.0,ring)*.5*(1.-r));c=mix(c,vec3(.8,.72,.35),smoothstep(.88,1.,r)*.7);gl_FragColor=vec4(c*lum,1.);}'});
   waterMats.push(mud);
   const drape=(x,z,R,col,seg,jag)=>{const pos=[x,heightAt(x,z)+.004,z],uv=[.5,.5],idx=[];for(let k=0;k<=seg;k++){const a=k/seg*6.283,rr=R*(1-jag+jag*2*rnd());const px=x+Math.cos(a)*rr,pz=z+Math.sin(a)*rr;pos.push(px,heightAt(px,pz)+.004,pz);uv.push(.5+Math.cos(a)*.5,.5+Math.sin(a)*.5);if(k)idx.push(0,k+1,k);}
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
@@ -801,7 +801,7 @@ function buildLandmarks(){
   const L=(t,lat,lon,dh,cls='',minD=0,maxD=1e9)=>{const p=P(lat,lon);addLabel(t,'land-lbl '+cls,()=>new THREE.Vector3(p[0],heightAt(p[0],p[1])+dh,p[1]),'landmarks',{minD,maxD});};
   L('▲ COPAHUE VOLCANO 2,997 m',-37.852,-71.168,.9);
   L('LAKE CAVIAHUE',-37.874,-71.012,.2,'water');
-  L('CAVIAHUE',-37.8685,-71.0532,.35,'',0,40);
+  L('CAVIAHUE',-37.8685,-71.0585,.35,'',0,40);
   L('✈ AIRFIELD',-37.851,-71.009,.3,'',0,22);L('⛷ CAVIAHUE SKI',-37.86105,-71.07586,.35,'',0,20);
   L('USINA VIEJA FALLS',-37.8556,-71.05782,.25,'',0,14);L('LA VIRGEN FALLS',-37.88269,-71.06674,.25,'',0,12);L('EL GIGANTE FALLS',-37.88617,-71.0708,.2,'',0,12);
   L('STONE BRIDGE',-37.88323,-71.01314,.25,'',0,18);L('LAGUNA DEL CACIQUE',-37.9014,-70.98529,.25,'water',0,20);L('ROUTE 26',-37.8524,-71.0262,.2,'',0,16);L('ROUTE 26',-37.8939,-71.0155,.2,'',0,16);
@@ -1350,7 +1350,7 @@ function boot(){
   terrain=new THREE.Mesh(geo,new THREE.MeshToonMaterial({vertexColors:true,gradientMap:gradTex}));groups.static.add(terrain);
   try{buildSalto();}catch(e){console.warn('salto',e);}
   buildSlab();buildLakes();buildRivers();buildRoads();buildCars();buildTrees();
-  buildTown([-37.8685,-71.0532],60,.42);buildCaviahueExtras();buildTown([-37.8212,-71.0985],32,.33);
+  buildTown([-37.8685,-71.0585],60,.42);buildCaviahueExtras();buildTown([-37.8212,-71.0985],32,.33);
   buildRuka(-37.8105,-71.1795);buildRuka(-37.8915,-71.0735,5);buildTermas();buildSolfataras();buildLife();buildFauna();buildCaniche();buildSites();buildLandmarks();buildCritters();buildField();buildPhotos();
   buildTerrainTiles();{const an=Math.min(8,renderer.capabilities.getMaxAnisotropy());scene.traverse(o=>{const m=o.material;if(m&&!Array.isArray(m)&&m.map&&m.map.isTexture){m.map.anisotropy=an;m.map.needsUpdate=true;}});}mergeStatic();resize();applyLayers();applyGfx(true);
   {const gb=document.getElementById('gfx-btn');if(gb)gb.onclick=cycleGfx;addEventListener('keydown',e=>{if(e.code==='KeyG'&&!/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||''))cycleGfx();});}
