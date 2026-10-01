@@ -197,7 +197,7 @@ const VEH_COLORS=[['#440154','Viridis purple','Morado viridis'],['#414487','Viri
 let VEH={type:'pickup',col:'#22a884'};try{const v=JSON.parse(localStorage.getItem('cfc_vehicle')||'null');if(v&&v.type)VEH=v;}catch(e){}
 if(!['pickup','van','monster','buggy'].includes(VEH.type))VEH.type='pickup';if(!VEH_COLORS.some(c=>c[0]===VEH.col))VEH.col='#22a884';
 function makeTruck(type,col,wheelsOut){
-  type=type||VEH.type;col=col||VEH.col;const W=wheelsOut||truck.wheels;W.length=0;
+  type=type||VEH.type;col=col||VEH.col;const W=wheelsOut||truck.wheels;W.length=0;if(type==='vitara')col='#f6f6f2';
   const toon=Wd.toon,g=new THREE.Group();const body=toon(col),glass=toon('#bfe9ff'),tire=toon('#222'),dk=toon('#2b2b2b'),chrome=toon('#d9d9d9');
   const accent=toon(col==='#ff4f3a'?'#1d1a2b':'#ff4f3a');
   const add=(geo,mat,x,y,z)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);g.add(m);return m;};
@@ -209,6 +209,28 @@ function makeTruck(type,col,wheelsOut){
     add(new THREE.BoxGeometry(.006,.02,.064),chrome,-.013,.076,0);add(new THREE.BoxGeometry(.006,.016,.074),chrome,.08,.036,0);
     add(new THREE.BoxGeometry(.026,.018,.03),toon('#ffffff'),-.06,.072,.013);add(new THREE.BoxGeometry(.026,.006,.031),toon('#3a86ff'),-.06,.083,.013);
     for(let k=0;k<2;k++)add(new THREE.CylinderGeometry(.009,.009,.026,8),toon('#8fd3ff'),-.03,.078,-.018+k*.012);}
+  else if(type==='vitara'){  // Raquel's white 4-door Suzuki Vitara (compact SUV)
+    const blk=toon('#1d1a20'),red=toon('#d62828'),lamp=toon('#fff6d0');
+    add(new THREE.BoxGeometry(.156,.034,.07),body,0,.05,0);                                              // lower body
+    add(new THREE.BoxGeometry(.05,.012,.068),body,.052,.072,0).rotation.z=-.08;                          // hood
+    add(new THREE.BoxGeometry(.098,.036,.066),body,-.022,.087,0);                                        // cabin
+    add(new THREE.BoxGeometry(.1,.004,.067),body,-.022,.106,0);                                          // roof
+    const ws=add(new THREE.BoxGeometry(.004,.034,.062),glass,.029,.088,0);ws.rotation.z=.55;              // windscreen
+    add(new THREE.BoxGeometry(.004,.026,.06),glass,-.0715,.089,0);                                       // tailgate window
+    [-1,1].forEach(s=>{add(new THREE.BoxGeometry(.086,.022,.002),glass,-.02,.09,.0335*s);                // side windows
+      [.022,-.012,-.046,-.068].forEach(x=>add(new THREE.BoxGeometry(.005,.024,.003),blk,x,.09,.0342*s));  // A/B/C/D pillars
+      [.008,-.03].forEach(x=>add(new THREE.BoxGeometry(.0012,.034,.0012),blk,x,.06,.0352*s));            // door seams: 4 doors
+      [.0,-.038].forEach(x=>add(new THREE.BoxGeometry(.008,.0025,.002),chrome,x,.07,.0356*s));            // door handles
+      add(new THREE.BoxGeometry(.16,.012,.003),blk,0,.036,.0352*s);                                      // black lower cladding
+      add(new THREE.BoxGeometry(.088,.0025,.003),chrome,-.022,.106,.03*s);                               // roof rails
+      add(new THREE.BoxGeometry(.008,.008,.012),blk,.03,.08,.04*s);                                      // mirrors
+      add(new THREE.BoxGeometry(.003,.008,.016),lamp,.0785,.06,.024*s);                                   // headlights
+      add(new THREE.BoxGeometry(.003,.012,.01),red,-.0785,.066,.028*s);});                               // tail lights
+    add(new THREE.BoxGeometry(.004,.014,.034),blk,.079,.054,0);add(new THREE.BoxGeometry(.0045,.002,.036),chrome,.0795,.057,0);  // grille + chrome bar
+    add(new THREE.BoxGeometry(.0048,.006,.006),chrome,.0798,.051,0);                                     // "S" badge
+    add(new THREE.BoxGeometry(.006,.012,.074),blk,.079,.036,0);add(new THREE.BoxGeometry(.006,.012,.074),blk,-.079,.036,0);  // bumpers
+    add(new THREE.BoxGeometry(.003,.008,.022),toon('#ffffff'),-.081,.048,0);                             // plate
+    wr=.022;wy=.022;wx=.05;wz=.037;}
   else if(type==='jeep'){
     add(new THREE.BoxGeometry(.13,.045,.072),body,0,.052,0);add(new THREE.BoxGeometry(.08,.042,.068),body,-.015,.095,0);add(new THREE.BoxGeometry(.081,.02,.07),glass,-.015,.1,0);
     add(new THREE.BoxGeometry(.07,.006,.06),dk,-.015,.119,0);for(let k=0;k<3;k++)add(new THREE.BoxGeometry(.004,.008,.06),chrome,-.04+k*.025,.124,0);
@@ -988,7 +1010,7 @@ function init(){
     e.b=makeBeacon(e.col);e.b.position.set(e.ax,Wd.heightAt(e.ax,e.az),e.az);Wd.groups.static.add(e.b);
     e.lbl=mkLabel('','glbl');return e;});
   spreadSites();
-  truck.g=makeTruck(PK.veh(VEH.type));Wd.scene.add(truck.g);pl.g=makePerson();addHeadlamp(pl.g);Wd.scene.add(pl.g);buildWeather();renderAvatars();makeCrew();try{buildBoat();}catch(e){console.warn(e);}try{buildBathers();}catch(e){console.warn(e);}try{buildEggs();}catch(e){console.warn(e);}try{buildVillage();}catch(e){console.warn(e);}
+  truck.g=makeTruck(PK.veh(VEH.type));Wd.scene.add(truck.g);pl.g=makePerson();addHeadlamp(pl.g);Wd.scene.add(pl.g);buildWeather();renderAvatars();makeCrew();try{buildBoat();}catch(e){console.warn(e);}try{buildBathers();}catch(e){console.warn(e);}try{buildEggs();}catch(e){console.warn(e);}try{buildMinerals();}catch(e){console.warn(e);}try{buildVillage();}catch(e){console.warn(e);}
   resetPositions();
   buildMissionList();buildMinimapBg();bindInput();
   GAME.tick=tick;GAME.active=true;window.__shot=(ci,acc)=>{const R=Wd.renderer,rt=new THREE.WebGLRenderTarget(160,200),sc=new THREE.Scene(),cm=new THREE.PerspectiveCamera(30,.8,.01,10);sc.add(new THREE.HemisphereLight(0xffffff,0x6a5a8a,.75));const dl=new THREE.DirectionalLight(0xffffff,.7);dl.position.set(2,3,2);sc.add(dl);const m=makePerson(CHARS[ci]);let nm;if(acc){m.userData.anim=m.userData.anim||[];const A=[...HEAD_ACC,...BODY_ACC].find(a=>a[0]===acc);A[1](m);nm=[acc];}else nm=rollAccessories(m);(m.userData.anim||[]).forEach(f=>f(1,true));m.scale.setScalar(1);m.rotation.y=-.6;sc.add(m);cm.position.set(.42,.17,.24);cm.lookAt(0,.12,0);const px=new Uint8Array(160*200*4);R.setRenderTarget(rt);R.setClearColor(0xfff3c4,1);R.clear();R.render(sc,cm);R.readRenderTargetPixels(rt,0,0,160,200,px);R.setRenderTarget(null);R.setClearColor(0,0);const cv=document.createElement('canvas');cv.width=160;cv.height=200;const cx=cv.getContext('2d');const id=cx.createImageData(160,200);for(let y=0;y<200;y++)id.data.set(px.subarray((199-y)*640,(200-y)*640),y*640);cx.putImageData(id,0,0);return [nm.join(' + '),cv.toDataURL()];};
@@ -1264,7 +1286,7 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
     const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:ptex(),color:0xfff6a0,transparent:true,opacity:.5,depthWrite:false}));halo.scale.setScalar(.28);g.add(halo);
     g.userData={nd,gem,halo};g.scale.setScalar(1.4);return g;}
   // ---------- vehicles: Celia rides a horse, Fernando a bicycle
-  const veh=t=>is('fernando')?'bike':t;
+  const veh=t=>is('fernando')?'bike':is('raquel')?'vitara':t;
   const animal=()=>!!(truck.g&&truck.g.userData.kind);
   const vmax=onRoad=>{const k=truck.g&&truck.g.userData.kind;const dz=is('dilanaz')?1.25*(ps.tune>0?1.2:1):1;return (k==='bike'?.8:k==='horse'?(onRoad?1:1.35):1)*dz;};
   const driveLbl=()=>{const k=truck.g&&truck.g.userData.kind;return k==='horse'?LX('🐴 RIDING','🐴 CABALGANDO'):k==='bike'?LX('🚲 PEDALLING','🚲 PEDALEANDO'):'🛻 DRIVING';};
@@ -1275,7 +1297,7 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
     simon:L2('Simón is a bit clumsy: he may break the jerrycan, the probe sensor or the filtration glassware while sampling.','Simón es medio torpe: puede quebrar el bidón, el sensor de la sonda o el material de filtración durante el muestreo.'),
     tito:L2('Tito carries a magic compass that always points (with a sparkly trail) to the next sampling site. He also filters 4× faster.','Tito lleva una brújula mágica que siempre apunta (con un rastro brillante) al siguiente sitio de muestreo. Además filtra 4 veces más rápido.'),
     dilanaz:L2('Dilanaz takes smoke breaks chatting in Turkish, dreams of being a car mechanic, drives a faster truck and tunes it up for extra speed.','Dilanaz para a fumar hablando en turco, sueña con ser mecánica de autos, su camioneta anda más rápido y la afina para que corra aún más.'),
-    raquel:L2('Raquel drops papers and theses as she walks. And she is Argentine: with Caniche or Pedro it is che, che, che.','Raquel va botando papers y tesis mientras camina. Y es argentina: con Caniche o Pedro es che, che, che.'),
+    raquel:L2('Raquel drops papers and theses as she walks. And she is Argentine: with Caniche or Pedro it is che, che, che. She drives her white 4-door Suzuki Vitara.','Raquel va botando papers y tesis mientras camina. Y es argentina: con Caniche o Pedro es che, che, che. Maneja su Suzuki Vitara blanca de 4 puertas.'),
     ricardo:L2('Ricardo is Argentine: he says che, che as he walks, and with Caniche or Pedro on the boat it is che, che, che.','Ricardo es argentino: dice che, che mientras camina, y con Caniche o Pedro del bote es puro che, che, che.'),
     alejandra:L2('Alejandra is Argentine: she says che, che as she walks, and with Caniche or Pedro on the boat it is che, che, che.','Alejandra es argentina: dice che, che mientras camina, y con Caniche o Pedro del bote es puro che, che, che.'),
     celia:L2('Celia dances salsa, talks about the orishas and keeps bumping into her best friend, another Celia from Cuba: they chat in slang nobody understands.','Celia baila salsa, habla de los orishas y a cada rato aparece su mejor amiga, otra Celia de Cuba: conversan en términos que nadie entiende.'),
@@ -1616,21 +1638,36 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
     const trouser=()=>sh([[0,.0045,.0093,.0093],[.001,-.03,.0073,.0075],[.0015,-.036,.0075,.0077],[0,-.059,.0057,.006]],blk);const tr=[trouser(),trouser()];u.legL.add(tr[0]);u.legR.add(tr[1]);
     p.userData.parts=[...sl,...tr];g.add(p);p.visible=false;u.pk.frac=p;
     const vis=p.visible;Object.defineProperty(p,'shown',{set(v){p.visible=v;p.userData.parts.forEach(o=>o.visible=v);},get(){return p.visible;}});p.shown=vis;return p;}
-  // Für Elise (Beethoven, public domain): [midi, 16ths, left-hand chord]
-  const ELISE=(()=>{const a=[[76,1],[75,1],[76,1],[75,1],[76,1],[71,1],[74,1],[72,1],[69,2,'A'],[0,1],[60,1],[64,1],[69,1],[71,2,'E'],[0,1]];
-    return [...a,[64,1],[68,1],[71,1],[72,2,'A'],[0,1],[64,1],...a,[64,1],[72,1],[71,1],[69,4,'A'],[0,2]];})();
-  function pianoMusic(dur){const ev={};let s=0;ELISE.forEach(e=>{ev[s]=e;s+=e[1];});const len=s;
-    seqMusic(dur,.55,72,(i,t,s16,T)=>{const e=ev[i%len];if(!e)return;const pn=(n,g,d)=>{const f=T.fq(n);T.osc('triangle',f,t,d,g);T.osc('sine',f*2,t,d*.5,g*.25);T.osc('sine',f,t,.05,g*.4);};
+  // Abraham's repertoire (all public domain). mel: [midi (0 = rest), 16ths, chord]; chords: {b: bass, c: [notes]}; st: arp | block | waltz
+  const SONGS=(()=>{const el=[[76,1],[75,1],[76,1],[75,1],[76,1],[71,1],[74,1],[72,1],[69,2,'A'],[0,1],[60,1],[64,1],[69,1],[71,2,'E'],[0,1]];
+    const ode=e=>[[64,4,'C'],[64,4],[65,4],[67,4],[67,4,'G'],[65,4],[64,4],[62,4],[60,4,'C'],[60,4],[62,4],[64,4],...e];
+    const gy=[[0,12,'G'],[0,12,'D'],[0,12,'G'],[0,12,'D'],[0,4,'G'],[78,4],[81,4],[79,4,'D'],[78,4],[73,4],[71,4,'G'],[73,4],[74,4],[69,12,'D'],[66,12,'G'],[66,12,'D'],[66,12,'G'],[66,12,'D']];
+    const tk=[[71,1],[69,1],[68,1],[69,1],[72,4,'Am'],[74,1],[72,1],[71,1],[72,1],[76,4,'Am'],[77,1],[76,1],[75,1],[76,1],[83,1],[81,1],[80,1],[81,1],[83,1],[81,1],[80,1],[81,1],[84,4,'Am'],[81,2],[84,2],
+      [83,2,'E'],[81,2],[79,2],[81,2],[83,2,'E'],[81,2],[79,2],[81,2],[83,2,'E'],[81,2],[79,2],[78,2],[76,4,'Am'],[0,4]];
+    const cn=[[78,4,'D'],[76,4,'A'],[74,4,'Bm'],[73,4,'Fm'],[71,4,'G'],[69,4,'D'],[71,4,'G'],[73,4,'A'],[74,4,'D'],[73,4,'A'],[71,4,'Bm'],[69,4,'Fm'],[67,4,'G'],[66,4,'D'],[67,4,'G'],[64,4,'A'],[66,8,'D']];
+    const br=[[64,2,'C'],[64,2],[67,6],[64,2],[64,2,'C'],[67,6],[64,2],[67,2,'G'],[72,4],[71,4],[69,4,'F'],[69,4],[67,4],[62,2,'G'],[64,2],[65,4],[62,4],[62,2,'G'],[64,2],[65,8],[62,2,'G'],[65,2],[71,2],[69,2],[67,4],[71,4,'C'],[72,8]];
+    return [{n:['Für Elise (Beethoven)','Para Elisa (Beethoven)'],bpm:72,st:'arp',ch:{A:{b:45,c:[52,57]},E:{b:40,c:[52,56]}},mel:[...el,[64,1],[68,1],[71,1],[72,2,'A'],[0,1],[64,1],...el,[64,1],[72,1],[71,1],[69,4,'A'],[0,2]]},
+      {n:['Ode to Joy (Beethoven)','Himno de la alegría (Beethoven)'],bpm:100,st:'block',ch:{C:{b:36,c:[48,52,55]},G:{b:43,c:[47,50,53]}},mel:[...ode([[64,6,'G'],[62,2],[62,8]]),...ode([[62,6,'G'],[60,2],[60,8,'C']])]},
+      {n:['Gymnopédie No. 1 (Satie)','Gymnopédie n.º 1 (Satie)'],bpm:84,st:'waltz',ch:{G:{b:43,c:[59,62,66]},D:{b:38,c:[57,61,66]}},mel:gy},
+      {n:['Rondo alla turca (Mozart)','Marcha turca (Mozart)'],bpm:112,st:'arp',ch:{Am:{b:45,c:[57,60,64]},E:{b:40,c:[56,59,64]}},mel:[...tk,...tk]},
+      {n:['Canon in D (Pachelbel)','Canon en re (Pachelbel)'],bpm:78,st:'block',ch:{D:{b:38,c:[50,54,57]},A:{b:33,c:[49,52,57]},Bm:{b:35,c:[50,54,59]},Fm:{b:30,c:[49,54,57]},G:{b:31,c:[50,55,59]}},mel:cn},
+      {n:['Lullaby (Brahms)','Canción de cuna (Brahms)'],bpm:96,st:'waltz',ch:{C:{b:36,c:[52,55,60]},G:{b:31,c:[50,53,59]},F:{b:41,c:[53,57,60]}},mel:br}];})();
+  const songLen=S=>S.mel.reduce((a,e)=>a+e[1],0)*60/S.bpm/4;
+  function pianoMusic(S,dur){const ev={};let s=0;S.mel.forEach(e=>{ev[s]=e;s+=e[1];});const len=s;
+    seqMusic(dur,.55,S.bpm,(i,t,s16,T)=>{const e=ev[i%len];if(!e)return;const pn=(n,g,d,tt=t)=>{const f=T.fq(n);T.osc('triangle',f,tt,d,g);T.osc('sine',f*2,tt,d*.5,g*.25);T.osc('sine',f,tt,.05,g*.4);};
       if(e[0])pn(e[0],.13,e[1]*s16*2+.5);
-      if(e[2]){const L=e[2]==='A'?[45,52,57]:[40,52,56];L.forEach((n,k)=>{const tt=t+k*s16;const f=T.fq(n);T.osc('triangle',f,tt,s16*4,.1);T.osc('sine',f*2,tt,s16*2,.03);});}});}
-  const RECITAL=[L2('🎹 Für Elise. Dedicated to the Río Agrio.','🎹 Para Elisa. Dedicada al Río Agrio.'),L2('🎹 Silence in the hall, please… I mean, in the steppe.','🎹 Silencio en la sala, por favor… digo, en la estepa.'),L2('🎹 A grand piano at 2,000 m: the logistics were a nightmare.','🎹 Un piano de cola a 2.000 m: la logística fue una pesadilla.'),
+      const c=e[2]&&S.ch[e[2]];if(!c)return;
+      if(S.st==='arp'){[c.b,...c.c].forEach((n,k)=>pn(n,.08,s16*4,t+k*s16));}
+      else if(S.st==='waltz'){pn(c.b,.1,s16*5);c.c.forEach(n=>pn(n,.05,s16*8,t+s16*4));}
+      else{pn(c.b,.1,s16*10);c.c.forEach(n=>pn(n,.05,s16*8));}});}
+  const RECITAL=[L2('🎹 Dedicated to the Río Agrio.','🎹 Dedicada al Río Agrio.'),L2('🎹 Silence in the hall, please… I mean, in the steppe.','🎹 Silencio en la sala, por favor… digo, en la estepa.'),L2('🎹 A grand piano at 2,000 m: the logistics were a nightmare.','🎹 Un piano de cola a 2.000 m: la logística fue una pesadilla.'),
     L2('🎹 The acoustics of this volcano are incredible.','🎹 La acústica de este volcán es increíble.'),L2('🎹 After the recital, breakfast. Obviously.','🎹 Después del recital, desayuno. Obvio.')];
-  X2.piano={start(A,u){A.yaw+=1.25;const f=[Math.cos(A.yaw),-Math.sin(A.yaw)];const gy=Wd.heightAt(pl.x,pl.z);
+  X2.piano={start(A,u){A.yaw+=1.25;{let i;do i=Math.floor(Math.random()*SONGS.length);while(SONGS.length>1&&i===ps.song);ps.song=i;A.song=SONGS[i];A.dur=clamp(songLen(A.song)+2.4,9,17);}const f=[Math.cos(A.yaw),-Math.sin(A.yaw)];const gy=Wd.heightAt(pl.x,pl.z);
       A.pn=pianoModel();A.pn.position.set(pl.x-f[0]*.005,gy,pl.z-f[1]*.005);A.pn.rotation.y=A.yaw;A.pn.scale.setScalar(.001);Wd.scene.add(A.pn);
-      fracProp(u,pl.g).shown=true;puff(pl.x,pl.z);spark(pl.x,gy+.2,pl.z,26,0xffffff,.6,1.3);AU.sfx.tada();say(LX('🎩 Excuse me… recital time.','🎩 Permiso… es hora del recital.'),2.4);},
+      fracProp(u,pl.g).shown=true;puff(pl.x,pl.z);spark(pl.x,gy+.2,pl.z,26,0xffffff,.6,1.3);AU.sfx.tada();say(LX('🎩 Excuse me… recital time: <b>','🎩 Permiso… es hora del recital: <b>')+A.song.n[LANG==='es'?1:0]+'</b>',2.6);},
     tick(A,dt,t){const p=A.pn;const k=Math.min(1,A.t/.45),e=1-Math.pow(1-k,3);p.scale.setScalar(Math.max(.001,A.t>A.dur-.35?(A.dur-A.t)/.35:e));
-      if(once(A,'m',.9)){pianoMusic(A.dur-1.2);}
-      if(once(A,'a',2.2))say(pk(RECITAL)(),3.4);if(once(A,'b',6.4))say(pk([LX('🎶 …and with feeling…','🎶 …y con sentimiento…'),LX('🎶 Pianissimo… now FORTISSIMO!','🎶 Pianissimo… ¡ahora FORTISSIMO!'),LX('🎶 *closes his eyes*','🎶 *cierra los ojos*')]),2.6);
+      if(once(A,'m',.9)){pianoMusic(A.song,A.dur-1.2);}
+      if(once(A,'a',2.8))say(pk(RECITAL)(),3.4);if(once(A,'b',Math.min(7,A.dur-3)))say(pk([LX('🎶 …and with feeling…','🎶 …y con sentimiento…'),LX('🎶 Pianissimo… now FORTISSIMO!','🎶 Pianissimo… ¡ahora FORTISSIMO!'),LX('🎶 *closes his eyes*','🎶 *cierra los ojos*')]),2.6);
       const fl=p.userData.flame;if(fl)fl.scale.set(.7,1.5+Math.sin(t*23)*.25,.7);
       A.nt=(A.nt||0)-dt;if(A.nt<=0&&A.t>1&&A.t<A.dur-1){A.nt=R(.25,.55);const f=[Math.cos(A.yaw),-Math.sin(A.yaw)],sd=[Math.sin(A.yaw),Math.cos(A.yaw)],r=R(-.3,.3);
         const x=pl.x+f[0]*.25+sd[0]*r,z=pl.z+f[1]*.25+sd[1]*r;npcSay(pk(['♪','♫','♬','𝄞']),[x,Wd.heightAt(x,z)+R(.3,.45),z],1);}},
@@ -2561,12 +2598,41 @@ function fpgHook(dt){if(!window.FPG)return;try{
   FPG.update(dt,{eye:eyeH(),fp:fpOn()&&!EV.cine,yaw:cam.yaw+cam.dragYaw,pitch:clamp(cam.fpPitch||0,-1.5,1.5),walk:pl.walk||0,moving:(pl.moveT||0)>0,running:!!pl.running,jy:pl.jy||0,
     carry:pl.carry,fill:pl.fill||0,filling:!modal&&!!(E&&E.hold&&K('KeyE')),canNear:!modal&&!!(E&&E.hold),nearQ:!modal&&!!(ctx&&ctx.Q&&ctx.Q.f),modal:modal&&modal.fp3d||null,panel:!!(modal&&$('#g-ov').classList.contains('fp3d')),site,ph,lang:LANG});
 }catch(e){console.error('fpgear',e);}}
+// ------------------------------------------------------------ UV-fluorescent minerals: a few rocks that glow at night; walk up to one to learn what it is
+const MINS=[
+ {n:['Fluorite','Fluorita'],c:'#7a5cff',r:'#9a8fb0',t:['Glows blue-violet under UV. The word "fluorescence" comes from this mineral.','Brilla azul violeta con luz UV. La palabra "fluorescencia" viene de este mineral.']},
+ {n:['Hyalite opal','Ópalo hialita'],c:'#3dff6e',r:'#d8e6d0',t:['Glassy volcanic opal with traces of uranium: it shines neon green under UV.','Ópalo vítreo de origen volcánico con trazas de uranio: brilla verde neón con luz UV.']},
+ {n:['Calcite','Calcita'],c:'#ff5a2a',r:'#e8dcc6',t:['With a little manganese it glows red-orange. It builds the travertine of hot springs.','Con un poco de manganeso brilla rojo anaranjado. Forma el travertino de las termas.']},
+ {n:['Aragonite','Aragonito'],c:'#b6ff4a',r:'#efe8d8',t:['Hot spring carbonate that glows yellow-green and keeps shining a moment after the light goes off.','Carbonato de aguas termales que brilla verde amarillo y sigue brillando un momento al apagar la luz.']},
+ {n:['Gypsum','Yeso (selenita)'],c:'#bfe8ff',r:'#f2efe8',t:['Grows where fumarole sulfur meets limestone; some crystals glow a pale blue-white.','Crece donde el azufre de las fumarolas toca roca calcárea; algunos cristales brillan blanco azulado.']},
+ {n:['Scheelite','Scheelita'],c:'#5fd0ff',r:'#c9c2a8',t:['A tungsten ore: prospectors find it at night with UV lamps because it glows bright sky blue.','Mena de tungsteno: los buscadores la encuentran de noche con lámparas UV porque brilla celeste intenso.']},
+ {n:['Willemite','Willemita'],c:'#2dff9a',r:'#b9a88a',t:['A zinc silicate famous for its vivid green fluorescence.','Silicato de zinc famoso por su fluorescencia verde intensa.']},
+ {n:['Hackmanite','Hackmanita'],c:'#ff9a2a',r:'#d9d3e8',t:['Glows orange under UV and even changes colour in sunlight (tenebrescence).','Brilla naranja con luz UV y hasta cambia de color con el sol (tenebrescencia).']},
+ {n:['Autunite','Autunita'],c:'#e8ff3a',r:'#c8c070',t:['Uranium phosphate that glows lemon yellow-green. Pretty, but look and do not touch!','Fosfato de uranio que brilla verde limón. Linda, pero se mira y no se toca.']}];
+const MINERALS=[];let minTex=null;
+function buildMinerals(){const toon=Wd.toon;minTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');const g=x.createRadialGradient(32,32,2,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.3,'rgba(255,255,255,.5)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
+  const sites=M.slice().sort(()=>Math.random()-.5).slice(0,10);  // only a few: one near ~10 of the sites
+  sites.forEach((m,i)=>{let p=null;for(let k=0;k<40&&!p;k++){const a=Math.random()*6.283,r=.45+Math.random()*.6,x=m.ax+Math.cos(a)*r,z=m.az+Math.sin(a)*r;if(walkable(x,z)&&Wd.infoAt(x,z).dl>.12&&!inRiver(x,z,.05)&&Math.hypot(x-base.x,z-base.z)>.6)p=[x,z];}
+    if(!p)return;const D=MINS[i%MINS.length],g=new THREE.Group();const y=Wd.heightAt(p[0],p[1]);g.position.set(p[0],y,p[1]);g.rotation.y=Math.random()*6.283;
+    const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.022,0),toon('#5a5560'));rock.scale.set(1.3,.6,1);rock.position.y=.006;g.add(rock);
+    const mat=new THREE.MeshBasicMaterial({color:D.r});const xs=[];
+    for(let k=0;k<6;k++){const cr=new THREE.Mesh(new THREE.OctahedronGeometry(.008+Math.random()*.005,0),mat);const a=k/6*6.283+Math.random()*.5,rr=.006+Math.random()*.012;
+      cr.position.set(Math.cos(a)*rr,.016+Math.random()*.008,Math.sin(a)*rr);cr.scale.set(.55,1.6+Math.random()*.8,.55);cr.rotation.set((Math.random()-.5)*.8,Math.random()*3,(Math.random()-.5)*.8);g.add(cr);xs.push(cr);}
+    const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:minTex,color:D.c,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}));glow.position.y=.03;glow.scale.setScalar(.16);g.add(glow);
+    Wd.scene.add(g);MINERALS.push({g,mat,glow,D,x:p[0],z:p[1],ph:Math.random()*6,seen:-1e9,base:new THREE.Color(D.r),hot:new THREE.Color(D.c)});});}
+const _mc=new THREE.Color();
+function updateMinerals(dt,t){if(!MINERALS.length)return;const n=WX.night,boost=window.REAL&&REAL.on?4.5:1.25;
+  for(const o of MINERALS){const far=Math.hypot(o.x-pl.x,o.z-pl.z)>14;o.g.visible=!far;if(far)continue;
+    const k=n*(.8+.2*Math.sin(t*1.7+o.ph));_mc.copy(o.base).lerp(o.hot,Math.min(1,n*1.4)).multiplyScalar(1+(boost-1)*k);o.mat.color.copy(_mc);
+    o.glow.visible=n>.05;o.glow.material.opacity=k*.75;o.glow.scale.setScalar(.12+.05*k);
+    if(mode==='play'&&!pl.inTruck&&n>.4&&S.t-o.seen>90&&Math.hypot(o.x-pl.x,o.z-pl.z)<.3){o.seen=S.t;const L=LANG==='es'?1:0;
+      toast(`💎 <b>${o.D.n[L]}</b> · ${LX('UV-fluorescent mineral','mineral fluorescente con luz UV')}<br><small>${o.D.t[L]}</small>`,false,6500);try{AU.sfx.tada();}catch(_){}}}}
 // ------------------------------------------------------------ main tick
 function tick(dt,t){
   if(mode==='play'&&!modal&&!EV.cine)updatePlay(dt,t);
   if(modal&&modal.tick){if(WX.block&&modal.field&&!PK.is('gabriel')){AUX.pump=0;AUX.gurgle=0;}else modal.tick(dt);}
   updateWorldEnv(dt,mode==='play');
-  updateModels(dt,t);fallTick(dt,t);if(mode!=='title')updateCrew(dt,t);updateBoat(dt,t);updateBathers(dt,t);updateEggs(dt,t);updateVillage(dt,t);updateVolcano(dt,t);if(!cineCamera(dt))updateCamera(dt);fpgHook(dt);updateHUD();drawMinimap();
+  updateModels(dt,t);fallTick(dt,t);if(mode!=='title')updateCrew(dt,t);updateBoat(dt,t);updateBathers(dt,t);updateEggs(dt,t);updateMinerals(dt,t);updateVillage(dt,t);updateVolcano(dt,t);if(!cineCamera(dt))updateCamera(dt);fpgHook(dt);updateHUD();drawMinimap();
   const E=Wd.infoAt(pl.x,pl.z),alt=meters(pl.inTruck?truck.g.position.y:Wd.heightAt(pl.x,pl.z));
   const filling=!modal&&ctx&&ctx.E&&ctx.E.hold&&K('KeyE');
   AU.update(dt,{water:Math.max(clamp(1-E.rv.d/1.1,0,1),E.dl<.8?clamp(1-E.dl/.8,0,1)*.45:0),crater:clamp(1-E.dc/4,0,1),vent:clamp(1-E.dc/1.5,0,1),wind:Math.max(clamp((alt-1800)/900,0,1)*.8+.12,WX.snow*.95),rain:WX.rainK,snow:WX.snow,boat:BOAT.near||0,finale:mode==='finale',drama:EV.st==='erupt'?2:EV.st==='quake'?1:0,quake:EV.shake,night:WX.night,alt,

@@ -46,20 +46,21 @@ function makePost(){return new T.ShaderMaterial({defines:{AO:1,RAYS:1},
       #endif
       float fog=1.-exp(-dc*.003*fogK*(1.+smoothstep(6.,1.,wp.y)));vec3 fc=skyCol(normalize(vec3(rd.x,max(rd.y,.02),rd.z)),sunW,night)*mix(1.,.8,night);
       fc+=vec3(1.,.8,.55)*pow(max(dot(rd,sunW),0.),8.)*.25*(1.-night);col=mix(col,fc,clamp(fog,0.,.92));
-      if(mistK>.01){float lo=smoothstep(camP.y-.15,camP.y-1.6,wp.y)*(1.-exp(-dc*.035));col=mix(col,fc*1.1+.05,clamp(lo*mistK*.8,0.,.8));}
+      if(mistK>.01){float lo=smoothstep(camP.y-.15,camP.y-1.6,wp.y)*(1.-exp(-dc*.035));col=mix(col,fc*.95+.02*(1.-night),clamp(lo*mistK*.32,0.,.3));}
       col=mix(col,vec3(.9,.92,.96)*(1.-night*.7),snowK*.7);}
     #if RAYS
     if(sunS.z>.5&&night<.9){vec2 dir=(sunS.xy-vUv)/24.;vec2 p=vUv;float acc=0.;float w=1.;for(int i=0;i<24;i++){p+=dir;float s=step(.99999,texture2D(tD,clamp(p,0.,1.)).x);acc+=s*w;w*=.96;}
       float fall=pow(max(dot(vd,sunV),0.),6.);col+=vec3(1.,.82,.58)*acc/24.*fall*.55*(1.-night);}
     #endif
-    col+=texture2D(tB,vUv).rgb*.55;
+    col+=texture2D(tB,vUv).rgb*.35;
+    col*=mix(vec3(1.),vec3(.5,.56,.82),night);
     col=aces(col*expo);col=pow(col,vec3(1.04));
     float l=dot(col,vec3(.299,.587,.114));col=mix(vec3(l),col,1.25);col*=vec3(1.02,1.,.97);
     vec2 q=vUv-.5;col*=1.-dot(q,q)*.55;col+=(hs(gl_FragCoord.xy+fract(time)*91.)-.5)*.018;
     gl_FragColor=vec4(col,1.);}`});}
 function makeBright(){return new T.ShaderMaterial({uniforms:{tC:{value:null},tD:{value:null},px:{value:new T.Vector2()}},vertexShader:VQ,depthTest:false,depthWrite:false,
   fragmentShader:`uniform sampler2D tC,tD;uniform vec2 px;varying vec2 vUv;void main(){vec3 c=vec3(0.);for(int i=0;i<4;i++){vec2 o=vec2(i==0||i==2?-1.:1.,i<2?-1.:1.)*px;vec3 s=texture2D(tC,vUv+o).rgb;
-    float l=max(max(s.r,s.g),s.b);c+=s*smoothstep(.82,1.25,l);}gl_FragColor=vec4(c*.25,1.);}`});}
+    float l=max(max(s.r,s.g),s.b);c+=s*smoothstep(1.05,1.7,l);}gl_FragColor=vec4(c*.25,1.);}`});}
 function makeBlur(){return new T.ShaderMaterial({uniforms:{tC:{value:null},dir:{value:new T.Vector2()}},vertexShader:VQ,depthTest:false,depthWrite:false,
   fragmentShader:`uniform sampler2D tC;uniform vec2 dir;varying vec2 vUv;void main(){vec3 c=texture2D(tC,vUv).rgb*.227;
     c+=(texture2D(tC,vUv+dir*1.38).rgb+texture2D(tC,vUv-dir*1.38).rgb)*.316;c+=(texture2D(tC,vUv+dir*3.23).rgb+texture2D(tC,vUv-dir*3.23).rgb)*.07;gl_FragColor=vec4(c,1.);}`});}
@@ -68,7 +69,7 @@ function makeBlur(){return new T.ShaderMaterial({uniforms:{tC:{value:null},dir:{
 const std=new WeakMap();
 function toStd(m){if(std.has(m))return std.get(m);const s=new T.MeshStandardMaterial({color:m.color.clone(),map:m.map||null,vertexColors:m.vertexColors,transparent:m.transparent,opacity:m.opacity,side:m.side,
     depthWrite:m.depthWrite,depthTest:m.depthTest,alphaTest:m.alphaTest,polygonOffset:m.polygonOffset,polygonOffsetFactor:m.polygonOffsetFactor,polygonOffsetUnits:m.polygonOffsetUnits,
-    roughness:.82,metalness:0,envMapIntensity:.45});
+    roughness:.82,metalness:0,envMapIntensity:.32});
   if(m.onBeforeCompile&&m.onBeforeCompile!==T.Material.prototype.onBeforeCompile){s.onBeforeCompile=m.onBeforeCompile;s.customProgramCacheKey=()=>'sw'+m.uuid;}
   const hx=m.color.getHexString();if(/^(bfe9ff|e6f6ff|eef4f6|cfe3ff|dff4ff|f4fbff)$/.test(hx)&&m.transparent){s.roughness=.08;s.metalness=.1;s.envMapIntensity=1.6;}  // glass & ice
   if(/^(d9d9d9|c9ced4|9aa3ad|b8bcc6)$/.test(hx)){s.metalness=.7;s.roughness=.35;}  // chrome / aluminium
@@ -99,7 +100,7 @@ function unsweep(root){root.traverse(o=>{if(!o.material)return;const back=m=>m&&
 const envCv=document.createElement('canvas');envCv.width=128;envCv.height=64;const envTex=new T.CanvasTexture(envCv);envTex.mapping=T.EquirectangularReflectionMapping;
 function updateEnv(night){if(!pmrem)pmrem=new T.PMREMGenerator(R);const x=envCv.getContext('2d');const s=W.sun.position.clone().sub(W.sun.target.position).normalize();
   const g=x.createLinearGradient(0,0,0,64);const k=1-night;const warm=Math.max(0,1-s.y*3);
-  g.addColorStop(0,`rgb(${40+60*k|0},${70+100*k|0},${110+130*k|0})`);g.addColorStop(.48,`rgb(${60+170*k*(1+warm*.1)|0},${70+150*k|0},${90+130*k*(1-warm*.4)|0})`);g.addColorStop(.52,`rgb(${50+60*k|0},${50+55*k|0},${45+40*k|0})`);g.addColorStop(1,`rgb(${25+30*k|0},${25+28*k|0},${22+20*k|0})`);
+  g.addColorStop(0,`rgb(${10+90*k|0},${16+154*k|0},${34+206*k|0})`);g.addColorStop(.48,`rgb(${16+214*k*(1+warm*.1)|0},${22+198*k|0},${38+182*k*(1-warm*.4)|0})`);g.addColorStop(.52,`rgb(${12+98*k|0},${12+93*k|0},${14+71*k|0})`);g.addColorStop(1,`rgb(${6+49*k|0},${6+47*k|0},${8+34*k|0})`);
   x.fillStyle=g;x.fillRect(0,0,128,64);const sx=((Math.atan2(s.x,-s.z)/(2*Math.PI))+1)%1*128,sy=(.5-Math.asin(Math.max(-1,Math.min(1,s.y)))/Math.PI)*64;const r=x.createRadialGradient(sx,sy,0,sx,sy,12);r.addColorStop(0,`rgba(255,235,200,${.9*k})`);r.addColorStop(1,'rgba(255,235,200,0)');x.fillStyle=r;x.fillRect(0,0,128,64);
   envTex.needsUpdate=true;if(envRT)envRT.dispose();envRT=pmrem.fromEquirectangular(envTex);W.scene.environment=envRT.texture;}
 
@@ -135,7 +136,7 @@ REAL.frame=function(dt,t){if(!ready){if(window.WORLD&&WORLD.rt)setup();else retu
   U.night.value=night;U.stars.value=night;U.cloudK.value=P.cloudK?P.cloudK.value:.5;U.snowK.value=P.snowK.value;U.mistK.value=P.mistK?P.mistK.value:0;
   (W.waterMats||[]).concat(W.riverMats||[]).forEach(m=>{if(m.uniforms&&m.uniforms.sunW){m.uniforms.sunW.value.copy(sw);m.uniforms.realK.value=1;}});
   const sp=C.position.clone().addScaledVector(sw,100).project(C);U.sunS.value.set(sp.x*.5+.5,sp.y*.5+.5,(sp.z<1&&Math.abs(sp.x)<1.6&&Math.abs(sp.y)<1.6)?1:0);
-  W.sun.intensity=(1.15+.35*(1-night))*(1-night*.8);W.hemi.intensity=.3*(1-night*.6)+.06;U.expo.value=.95+night*.8;
+  W.sun.intensity=(1.+.25*(1-night))*(1-night*.85);W.hemi.intensity=.24*(1-night*.7)+.04;U.expo.value=.74+night*.06;  // night stays dark (exposure used to go UP at night)
   post.defines.AO=W.GFX.level==='low'?0:1;post.defines.RAYS=W.GFX.level==='low'?0:1;if(post.defines._l!==W.GFX.level){post.defines._l=W.GFX.level;post.needsUpdate=true;}
   try{reflect();}catch(e){console.warn('refl',e);setRefl(0);}
   return true;};
