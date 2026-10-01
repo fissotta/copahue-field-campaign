@@ -2601,13 +2601,13 @@ function showTitle(){
 }
 function start(){closeModal();mode='play';AU.init();setTimeout(()=>setCharacter(charIdx),900);setTimeout(()=>AU.sfx.voice(10,170),300);buildMissionList();toast('🛻 Welcome to Caviahue! Pick a site from the <b>MISSION</b> list (or follow the arrow). Hike sites 🥾 are on the volcano.',false,5000);}
 function showHelp(){if(modal&&modal.help){closeModal();return;}
-  const K=(k,en,es)=>`<tr><td style="white-space:nowrap;padding:3px 10px 3px 0;vertical-align:top">${k.split(' ').map(x=>x==='/'||x==='+'?x:`<kbd>${x}</kbd>`).join(' ')}</td><td style="padding:3px 0">${LX(en,es)}</td></tr>`;
+  const K=(k,en,es)=>`<tr><td style="width:44%;padding:3px 10px 3px 0;vertical-align:top;line-height:1.7">${k.split(' ').map(x=>x==='/'||x==='+'?x:`<kbd>${x}</kbd>`).join(' ')}</td><td style="padding:3px 0">${LX(en,es)}</td></tr>`;
   const H=(en,es)=>`<tr><td colspan="2" style="padding:10px 0 3px;font-family:Bangers,sans-serif;font-size:18px;letter-spacing:.5px;color:#1d1a2b">${LX(en,es)}</td></tr>`;
   openModal({help:true,title:LX('COMMANDS & HELP','COMANDOS Y AYUDA'),meta:LX('Press <kbd>H</kbd> or <kbd>Esc</kbd> to close','Pulsa <kbd>H</kbd> o <kbd>Esc</kbd> para cerrar'),col:'#00bbf9',key:c=>{if(c==='KeyH')closeModal();},html:`
  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 26px;font-size:14px;line-height:1.3">
- <table style="border-collapse:collapse">
+ <table style="border-collapse:collapse;width:100%;table-layout:fixed">
   ${H('Moving','Moverse')}
-  ${K('W A S D / ↑ ↓ ← →','Walk / drive','Caminar / manejar')}
+  ${K('W A S D ↑ ↓ ← →','Walk / drive','Caminar / manejar')}
   ${K('Space','Jump (on foot)','Saltar (a pie)')}
   ${K('Shift','Turbo (in a vehicle)','Turbo (en vehículo)')}
   ${K('B','Horn','Bocina')}
@@ -2621,7 +2621,7 @@ function showHelp(){if(modal&&modal.help){closeModal();return;}
   ${K('G','Graphics quality','Calidad gráfica')}
   ${K('K','Photo mode','Modo foto')}
  </table>
- <table style="border-collapse:collapse">
+ <table style="border-collapse:collapse;width:100%;table-layout:fixed">
   ${H('Sampling','Muestreo')}
   ${K('E','Get in/out of the truck, fill and pour the jerrycan (hold), filter','Subir/bajar de la camioneta, llenar y vaciar el bidón (mantener), filtrar')}
   ${K('Q','Multiparameter probe','Sonda multiparamétrica')}
