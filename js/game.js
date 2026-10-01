@@ -977,7 +977,8 @@ function init(){
   Wd.roadPaths.forEach(c=>c.getSpacedPoints(Math.ceil(c.getLength()/.04)).forEach(p=>roadPts.push([p.x,p.z])));
   labelsEl=$('#g-labels');
   const bp=nearestRoad(...Wd.P(-37.8685,-71.0585));
-  base={x:bp[0]-.18,z:bp[1]-.12};  // west of Ruta 26, between the road and the village (east of the road the shipping pad fell in the lake and pushed the LC beacon inland)base.g=makeBase([base.x,base.z]);
+  // base west of Ruta 26, between the road and the village (east of the road the shipping pad fell in the lake and pushed the LC beacon inland)
+  base={x:bp[0]-.18,z:bp[1]-.12};base.g=makeBase([base.x,base.z]);
   base.pad=makeBeacon('#ff4f3a');base.px=base.x-.02;base.pz=base.z+.34;base.pad.position.set(base.px,Wd.heightAt(base.px,base.pz),base.pz);base.pad.scale.set(1.2,1,1.2);base.pad.userData.drop.visible=base.pad.userData.tip.visible=false;Wd.groups.static.add(base.pad);
   base.lbl=mkLabel('MEL FIELD BASE<small>ship samples to sequencing</small>','glbl base');
   const RV0=Wd.RIVERS[0].P;const SPREAD={VA2:RV0[Math.min(4,RV0.length-1)],VA1:RV0[Math.min(8,RV0.length-1)]};
