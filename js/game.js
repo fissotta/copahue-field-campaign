@@ -209,27 +209,32 @@ function makeTruck(type,col,wheelsOut){
     add(new THREE.BoxGeometry(.006,.02,.064),chrome,-.013,.076,0);add(new THREE.BoxGeometry(.006,.016,.074),chrome,.08,.036,0);
     add(new THREE.BoxGeometry(.026,.018,.03),toon('#ffffff'),-.06,.072,.013);add(new THREE.BoxGeometry(.026,.006,.031),toon('#3a86ff'),-.06,.083,.013);
     for(let k=0;k<2;k++)add(new THREE.CylinderGeometry(.009,.009,.026,8),toon('#8fd3ff'),-.03,.078,-.018+k*.012);}
-  else if(type==='vitara'){  // Raquel's white 4-door Suzuki Vitara (compact SUV)
-    const blk=toon('#1d1a20'),red=toon('#d62828'),lamp=toon('#fff6d0');
-    add(new THREE.BoxGeometry(.156,.034,.07),body,0,.05,0);                                              // lower body
-    add(new THREE.BoxGeometry(.05,.012,.068),body,.052,.072,0).rotation.z=-.08;                          // hood
-    add(new THREE.BoxGeometry(.098,.036,.066),body,-.022,.087,0);                                        // cabin
-    add(new THREE.BoxGeometry(.1,.004,.067),body,-.022,.106,0);                                          // roof
-    const ws=add(new THREE.BoxGeometry(.004,.034,.062),glass,.029,.088,0);ws.rotation.z=.55;              // windscreen
-    add(new THREE.BoxGeometry(.004,.026,.06),glass,-.0715,.089,0);                                       // tailgate window
-    [-1,1].forEach(s=>{add(new THREE.BoxGeometry(.086,.022,.002),glass,-.02,.09,.0335*s);                // side windows
-      [.022,-.012,-.046,-.068].forEach(x=>add(new THREE.BoxGeometry(.005,.024,.003),blk,x,.09,.0342*s));  // A/B/C/D pillars
-      [.008,-.03].forEach(x=>add(new THREE.BoxGeometry(.0012,.034,.0012),blk,x,.06,.0352*s));            // door seams: 4 doors
-      [.0,-.038].forEach(x=>add(new THREE.BoxGeometry(.008,.0025,.002),chrome,x,.07,.0356*s));            // door handles
-      add(new THREE.BoxGeometry(.16,.012,.003),blk,0,.036,.0352*s);                                      // black lower cladding
-      add(new THREE.BoxGeometry(.088,.0025,.003),chrome,-.022,.106,.03*s);                               // roof rails
-      add(new THREE.BoxGeometry(.008,.008,.012),blk,.03,.08,.04*s);                                      // mirrors
-      add(new THREE.BoxGeometry(.003,.008,.016),lamp,.0785,.06,.024*s);                                   // headlights
-      add(new THREE.BoxGeometry(.003,.012,.01),red,-.0785,.066,.028*s);});                               // tail lights
-    add(new THREE.BoxGeometry(.004,.014,.034),blk,.079,.054,0);add(new THREE.BoxGeometry(.0045,.002,.036),chrome,.0795,.057,0);  // grille + chrome bar
-    add(new THREE.BoxGeometry(.0048,.006,.006),chrome,.0798,.051,0);                                     // "S" badge
-    add(new THREE.BoxGeometry(.006,.012,.074),blk,.079,.036,0);add(new THREE.BoxGeometry(.006,.012,.074),blk,-.079,.036,0);  // bumpers
-    add(new THREE.BoxGeometry(.003,.008,.022),toon('#ffffff'),-.081,.048,0);                             // plate
+  else if(type==='vitara'){  // Raquel's white 4-door Suzuki Grand Vitara, 3rd generation (2005–2015): boxy, flared arches, spare wheel on the side-hinged tailgate
+    const blk=toon('#1d1a20'),red=toon('#d62828'),amb=toon('#ff9f1c'),lamp=toon('#fff6d0');
+    add(new THREE.BoxGeometry(.15,.04,.07),body,0,.053,0);                                               // lower body
+    add(new THREE.BoxGeometry(.046,.01,.068),body,.052,.076,0);                                          // flat, square hood
+    add(new THREE.BoxGeometry(.098,.04,.068),body,-.024,.093,0);                                         // tall, upright cabin
+    add(new THREE.BoxGeometry(.1,.004,.069),body,-.024,.115,0);                                          // roof
+    const ws=add(new THREE.BoxGeometry(.004,.036,.064),glass,.026,.094,0);ws.rotation.z=.32;              // windscreen (more upright than the new model)
+    add(new THREE.BoxGeometry(.003,.03,.06),glass,-.0745,.094,0);                                        // tailgate window
+    [-1,1].forEach(s=>{add(new THREE.BoxGeometry(.088,.026,.002),glass,-.024,.095,.0345*s);              // side windows
+      [.021,-.014,-.05,-.072].forEach(x=>add(new THREE.BoxGeometry(.005,.028,.003),blk,x,.095,.0352*s));  // A/B/C/D pillars
+      [.006,-.032].forEach(x=>add(new THREE.BoxGeometry(.0012,.036,.0012),blk,x,.062,.0356*s));          // door seams: 4 doors
+      [-.003,-.041].forEach(x=>add(new THREE.BoxGeometry(.008,.0025,.002),chrome,x,.074,.036*s));         // door handles
+      add(new THREE.BoxGeometry(.11,.006,.003),blk,-.012,.052,.0358*s);                                  // body-side moulding
+      [.05,-.05].forEach(x=>{add(new THREE.BoxGeometry(.04,.006,.012),body,x,.05,.036*s);                 // flared, squared wheel arches
+        add(new THREE.BoxGeometry(.042,.004,.008),blk,x,.046,.0405*s);});
+      add(new THREE.BoxGeometry(.09,.0025,.003),chrome,-.024,.115,.031*s);                               // roof rails
+      add(new THREE.BoxGeometry(.008,.009,.012),blk,.028,.084,.04*s);                                    // mirrors
+      add(new THREE.BoxGeometry(.003,.011,.017),lamp,.0755,.065,.024*s);add(new THREE.BoxGeometry(.003,.004,.006),amb,.0756,.058,.03*s);  // headlights + indicators
+      add(new THREE.BoxGeometry(.003,.022,.008),red,-.0755,.08,.03*s);});                                // tall vertical tail lights
+    add(new THREE.BoxGeometry(.004,.016,.034),blk,.0755,.062,0);for(let k=0;k<3;k++)add(new THREE.BoxGeometry(.0045,.0018,.034),chrome,.076,.057+k*.005,0);  // grille with chrome slats
+    add(new THREE.BoxGeometry(.0048,.007,.007),chrome,.0765,.064,0);                                     // "S" badge
+    add(new THREE.BoxGeometry(.008,.014,.074),blk,.077,.038,0);add(new THREE.BoxGeometry(.008,.014,.074),blk,-.077,.038,0);  // grey bumpers
+    add(new THREE.CylinderGeometry(.022,.022,.013,16).rotateZ(Math.PI/2),body,-.0815,.07,.004);         // spare wheel hidden under its white hard cover
+    add(new THREE.CylinderGeometry(.019,.019,.002,16).rotateZ(Math.PI/2),toon('#e4e4de'),-.0885,.07,.004);  // slightly recessed centre of the cover
+    add(new THREE.BoxGeometry(.001,.006,.006),blk,-.0892,.07,.004);                                      // badge on the cover
+    add(new THREE.BoxGeometry(.003,.008,.022),toon('#ffffff'),-.0805,.045,0);                            // plate
     wr=.022;wy=.022;wx=.05;wz=.037;}
   else if(type==='jeep'){
     add(new THREE.BoxGeometry(.13,.045,.072),body,0,.052,0);add(new THREE.BoxGeometry(.08,.042,.068),body,-.015,.095,0);add(new THREE.BoxGeometry(.081,.02,.07),glass,-.015,.1,0);
@@ -1046,12 +1051,16 @@ function riverAt(x,z){const rv=Wd.nearestRiver(x,z);const R=Wd.RIVERS[rv.ri];if(
 function inRiver(x,z,pad=0){const r=riverAt(x,z);return r.d<r.hw+pad;}
 function truckInRiver(){const tg=tailgate();const fx=Math.cos(truck.yaw),fz=-Math.sin(truck.yaw);return inRiver(truck.x,truck.z,.02)||inRiver(tg[0],tg[1],.02)||inRiver(truck.x+fx*.13,truck.z+fz*.13,.0);}
 function resetPositions(){
-  const i=roadPts.findIndex(p=>Math.hypot(p[0]-base.x,p[1]-base.z)<.5);const a=roadPts[Math.max(0,i)],b=roadPts[Math.min(roadPts.length-1,Math.max(0,i)+3)];
-  truck.x=a[0];truck.z=a[1];truck.yaw=Math.atan2(-(b[1]-a[1]),b[0]-a[0])+Math.PI;truck.speed=0;
-  {const d=Math.hypot(truck.x-base.x,truck.z-base.z);if(d<.7){const k=(.75-d)/(d||1);truck.x+=(truck.x-base.x)*k;truck.z+=(truck.z-base.z)*k;}}
-  if(truckInRiver()){  // pushed off the base onto the Río Agrio: park on the nearest dry stretch of road instead, or you can't get out
-    const c=roadPts.map((p,j)=>[p,j]).filter(([p])=>Math.hypot(p[0]-base.x,p[1]-base.z)>=.7).sort((u,v)=>Math.hypot(u[0][0]-base.x,u[0][1]-base.z)-Math.hypot(v[0][0]-base.x,v[0][1]-base.z));
-    for(const [p,j] of c.slice(0,80)){const q=roadPts[Math.min(roadPts.length-1,j+3)];truck.x=p[0];truck.z=p[1];truck.yaw=Math.atan2(-(q[1]-p[1]),q[0]-p[0])+Math.PI;if(!truckInRiver())break;}}
+  // park ON Ruta 26, at the first stretch of road at least .75 from the base (pushing the truck away from the base used to leave it off the road, on the steep lake bank)
+  const dB=(x,z)=>Math.hypot(x-base.x,z-base.z);
+  const c=roadPts.map((p,j)=>[p,j,dB(p[0],p[1])]).filter(q=>q[2]>=.75&&q[2]<2.5).sort((u,v)=>u[2]-v[2]);
+  const clear=(x,z,yw)=>{const fx=Math.cos(yw),fz=-Math.sin(yw);for(let t=.1;t<=.6;t+=.1){const px=x+fx*t,pz=z+fz*t;if(roadDist(px,pz)>.045||Wd.infoAt(px,pz).dl<.06||inRiver(px,pz,.02))return false;}return true;};
+  let ok=false;
+  for(const [p,j,d] of c){for(const k of [j+2,j-2]){const g=roadPts[Math.max(0,Math.min(roadPts.length-1,k))];if(g===p||dB(g[0],g[1])<=d)continue;  // along the road, away from the base
+      const yw=Math.atan2(-(g[1]-p[1]),g[0]-p[0]);if(clear(p[0],p[1],yw)){truck.x=p[0];truck.z=p[1];truck.yaw=yw;ok=true;break;}}
+    if(ok)break;}
+  if(!ok&&c.length){const [p,j]=c[0],g=roadPts[Math.min(roadPts.length-1,j+2)];truck.x=p[0];truck.z=p[1];truck.yaw=Math.atan2(-(g[1]-p[1]),g[0]-p[0]);}
+  truck.speed=0;
   pl.inTruck=true;pl.x=truck.x;pl.z=truck.z;pl.carry=0;cam.yaw=truck.yaw;
 }
 function mkLabel(html,cls){const el=document.createElement('div');el.className=cls;el.innerHTML=html;labelsEl.appendChild(el);return el;}
@@ -1297,7 +1306,7 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
     simon:L2('Simón is a bit clumsy: he may break the jerrycan, the probe sensor or the filtration glassware while sampling.','Simón es medio torpe: puede quebrar el bidón, el sensor de la sonda o el material de filtración durante el muestreo.'),
     tito:L2('Tito carries a magic compass that always points (with a sparkly trail) to the next sampling site. He also filters 4× faster.','Tito lleva una brújula mágica que siempre apunta (con un rastro brillante) al siguiente sitio de muestreo. Además filtra 4 veces más rápido.'),
     dilanaz:L2('Dilanaz takes smoke breaks chatting in Turkish, dreams of being a car mechanic, drives a faster truck and tunes it up for extra speed.','Dilanaz para a fumar hablando en turco, sueña con ser mecánica de autos, su camioneta anda más rápido y la afina para que corra aún más.'),
-    raquel:L2('Raquel drops papers and theses as she walks. And she is Argentine: with Caniche or Pedro it is che, che, che. She drives her white 4-door Suzuki Vitara.','Raquel va botando papers y tesis mientras camina. Y es argentina: con Caniche o Pedro es che, che, che. Maneja su Suzuki Vitara blanca de 4 puertas.'),
+    raquel:L2('Raquel drops papers and theses as she walks. And she is Argentine: with Caniche or Pedro it is che, che, che. She drives her white 4-door Suzuki Grand Vitara.','Raquel va botando papers y tesis mientras camina. Y es argentina: con Caniche o Pedro es che, che, che. Maneja su Suzuki Grand Vitara blanca de 4 puertas.'),
     ricardo:L2('Ricardo is Argentine: he says che, che as he walks, and with Caniche or Pedro on the boat it is che, che, che.','Ricardo es argentino: dice che, che mientras camina, y con Caniche o Pedro del bote es puro che, che, che.'),
     alejandra:L2('Alejandra is Argentine: she says che, che as she walks, and with Caniche or Pedro on the boat it is che, che, che.','Alejandra es argentina: dice che, che mientras camina, y con Caniche o Pedro del bote es puro che, che, che.'),
     celia:L2('Celia dances salsa, talks about the orishas and keeps bumping into her best friend, another Celia from Cuba: they chat in slang nobody understands.','Celia baila salsa, habla de los orishas y a cada rato aparece su mejor amiga, otra Celia de Cuba: conversan en términos que nadie entiende.'),
@@ -2983,7 +2992,7 @@ function lab(){
   }
 }
 // ============================================================ XA ADDONS: comic FX, driving feel, road events, achievements, journal,
-// difficulty, modes (time trial / daily / classroom), photo mode, ghost race, fullscreen, local records
+// photo mode, fullscreen
 function xaInit(){
 const LS=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}};
 const SS=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
@@ -3035,7 +3044,7 @@ const speedEl=document.createElement('div');speedEl.id='xa-speed';document.body.
 // ---------------- HUD bar (journal, achievements, photo, fullscreen)
 const bar=document.createElement('div');bar.id='xa-bar';bar.innerHTML=`<button class="g-btn" id="xa-jb">📓 ${LX('JOURNAL','DIARIO')}</button><button class="g-btn" id="xa-ab">🏅 ${LX('BADGES','LOGROS')}</button><button class="g-btn" id="xa-pb">📷 ${LX('PHOTO','FOTO')} (K)</button><button class="g-btn" id="xa-fs" title="Fullscreen">🖥️</button>`;
 document.body.appendChild(bar);
-const hud=document.createElement('div');hud.id='xa-hud';hud.innerHTML=`<div class="g-panel" id="xa-goal" style="display:none"></div><div class="g-panel" id="xa-evt" style="display:none"></div><div class="g-panel" id="xa-turbo" style="display:none">⚡ TURBO (SHIFT)<i><b></b></i></div>`;document.body.appendChild(hud);
+const hud=document.createElement('div');hud.id='xa-hud';hud.innerHTML=`<div class="g-panel" id="xa-evt" style="display:none"></div><div class="g-panel" id="xa-turbo" style="display:none">⚡ TURBO (SHIFT)<i><b></b></i></div>`;document.body.appendChild(hud);
 $('#xa-jb').onclick=()=>openJournal();$('#xa-ab').onclick=()=>openAch();$('#xa-pb').onclick=()=>togglePhoto();
 $('#xa-fs').onclick=()=>{const d=document.documentElement;try{if(document.fullscreenElement){document.exitFullscreen();return;}const r=(d.requestFullscreen||d.webkitRequestFullscreen).call(d);if(r&&r.catch)r.catch(()=>toast(LX('Your browser does not allow fullscreen here — try the browser\'s own fullscreen (F11 / ⌃⌘F).','Tu navegador no permite pantalla completa aquí: usa la del navegador (F11 / ⌃⌘F).'),true));}catch(e){toast(LX('Fullscreen is not available here.','La pantalla completa no está disponible aquí.'),true);}};
 {const tb=$('#g-tbtn');if(tb){const b=document.createElement('button');b.className='g-btn';b.id='g-tT';b.textContent='⚡ TURBO';tb.appendChild(b);b.addEventListener('pointerdown',e=>{e.preventDefault();X.turboReq=true;});}}
@@ -3059,8 +3068,6 @@ const ACH=[
  ['turbo10','⚡','Turbo junkie','Adicto al turbo','Use the turbo 10 times.','Usa el turbo 10 veces.'],
  ['km20','🛻','Road warrior','Guerrero del camino','Drive 20 km in total.','Maneja 20 km en total.'],
  ['fast30','⏱️','Speed science','Ciencia express','Ship a full campaign in under 30 minutes.','Envía una campaña completa en menos de 30 minutos.'],
- ['ta','🏁','Time trialist','Contrarrelojista','Finish a time trial.','Termina una contrarreloj.'],
- ['daily','📅','Daily grind','Desafío cumplido','Finish a daily challenge.','Completa un desafío diario.'],
  ['quiz5','🎓','Top of the class','Primero de la clase','Answer 5 classroom questions correctly.','Responde bien 5 preguntas del modo aula.'],
  ['photo','📸','Field photographer','Fotógrafo de campo','Take a photo in photo mode.','Toma una foto en el modo foto.'],
  ['expedition','🧗','Hardcore','Expedicionario','Complete a site on Expedition difficulty.','Completa un sitio en dificultad Expedición.'],
@@ -3087,17 +3094,12 @@ function openJournal(){const done=M.filter(m=>journal[m.c]).length;
       <br><small>✔ ${j.d}${j.n?' · '+esc2(j.n):''}</small></div>`;}).join('')}</div>`});}
 // ---------------- difficulty / mode / classroom selectors on the title screen
 const dailyKey=()=>new Date().toISOString().slice(0,10);
-function dailySites(){const key=dailyKey();let h=0;for(const ch of key)h=(h*31+ch.charCodeAt(0))>>>0;const pool=M.filter(m=>!m.hike).map(m=>m.c);const out=[];
-  while(out.length<3&&pool.length){h=(h*1103515245+12345)>>>0;out.push(pool.splice(h%pool.length,1)[0]);}const wx=['clear','rain','snow'][h%3];return {sites:out,wx};}
 function augmentTitle(){const mb=$('#g-mb');if(!mb||!modal||modal.title!=='COPAHUE FIELD CAMPAIGN'||$('#xa-opts'))return;
   const opt=(k,v,label)=>`<button class="g-btn${cfg[k]===v?' on':''}" data-k="${k}" data-v="${v}">${label}</button>`;
-  const d=dailySites();const box=document.createElement('div');box.id='xa-opts';box.style.cssText='border:2.5px solid #1d1a2b;border-radius:8px;padding:6px 10px;margin:8px 0;background:#fff8e0';
+  const box=document.createElement('div');box.id='xa-opts';box.style.cssText='border:2.5px solid #1d1a2b;border-radius:8px;padding:6px 10px;margin:8px 0;background:#fff8e0';
   box.innerHTML=`<div class="g-row" style="margin-top:4px"><button class="g-btn" id="xa-t-ach">🏅 ${LX('BADGES','LOGROS')} (${ACH.filter(a=>ach[a[0]]).length}/${ACH.length})</button><button class="g-btn" id="xa-t-jr">📓 ${LX('JOURNAL','DIARIO')}</button></div>`;
   const row=mb.querySelector('.g-row');row?row.parentNode.insertBefore(box,row):mb.appendChild(box);
-  const note=()=>{const n=$('#xa-mnote');if(!n)return;n.innerHTML=cfg.mode==='ta'?LX('Sample any <b>5 sites</b> as fast as you can. Your best run races you as a <b>ghost truck</b>.','Muestrea <b>5 sitios</b> cualquiera lo más rápido posible. Tu mejor vuelta te corre como <b>camioneta fantasma</b>.')
-    :cfg.mode==='daily'?LX(`Today (${dailyKey()}): sample <b>${d.sites.join(', ')}</b> · weather: <b>${d.wx}</b>. Same challenge for everyone today.`,`Hoy (${dailyKey()}): muestrea <b>${d.sites.join(', ')}</b> · clima: <b>${{clear:'despejado',rain:'lluvia',snow:'nieve'}[d.wx]}</b>. El mismo desafío para todos hoy.`)
-    :LX('The full field campaign: 13 sites, then sequence at the MEL Field Base.','La campaña completa: 13 sitios y luego secuenciar en la base MEL.');
-    n.innerHTML+=' '+(cfg.diff==='relaxed'?LX('Relaxed: no storms, score ×0.8.','Relajado: sin tormentas, puntaje ×0,8.'):cfg.diff==='expedition'?LX('Expedition: frequent storms and road trouble, score ×1.3.','Expedición: tormentas y problemas en ruta frecuentes, puntaje ×1,3.'):'');};
+  const note=()=>{const n=$('#xa-mnote');if(!n)return;n.innerHTML=LX('The full field campaign: 13 sites, then sequence at the MEL Field Base.','La campaña completa: 13 sitios y luego secuenciar en la base MEL.');};
   note();box.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const k=b.dataset.k;cfg[k]=b.dataset.v==='true'?true:b.dataset.v==='false'?false:b.dataset.v;saveCfg();
     box.querySelectorAll(`[data-k="${k}"]`).forEach(o=>o.classList.toggle('on',o===b));note();AU.sfx.click&&AU.sfx.click();});
   $('#xa-t-ach').onclick=()=>{openAch();const o=modal;o.onclose=()=>setTimeout(showTitle,0);};$('#xa-t-jr').onclick=()=>{openJournal();const o=modal;o.onclose=()=>setTimeout(showTitle,0);};
@@ -3105,10 +3107,7 @@ function augmentTitle(){const mb=$('#g-mb');if(!mb||!modal||modal.title!=='COPAH
 const _showTitle=showTitle;showTitle=function(){_showTitle.apply(this,arguments);augmentTitle();};augmentTitle();
 const _start=start;start=function(){_start.apply(this,arguments);beginRun();};
 function beginRun(){X.streak=0;X.flags={};EVT.cur=null;EVT.next=60+Math.random()*40;clearEvt();
-  X.run={mode:cfg.mode,diff:cfg.diff,t0:S.t,goal:null,sites:null,done:false,path:[],pt:0};
-  if(cfg.mode==='ta'){X.run.goal=5;ghostStart();toast(LX('🏁 <b>TIME TRIAL</b>: sample any 5 sites as fast as you can!','🏁 <b>CONTRARRELOJ</b>: ¡muestrea 5 sitios lo más rápido que puedas!'),false,4500);}
-  else if(cfg.mode==='daily'){const d=dailySites();X.run.sites=d.sites;X.run.goal=d.sites.length;const m=M.find(q=>q.c===d.sites[0]);if(m)S.target=m;
-    if(d.wx!=='clear'){WX.next=8;X.run.forceWx=d.wx;}toast(LX(`📅 <b>DAILY CHALLENGE</b>: ${d.sites.join(', ')}`,`📅 <b>DESAFÍO DIARIO</b>: ${d.sites.join(', ')}`),false,4500);}
+  X.run={mode:cfg.mode,diff:cfg.diff,t0:S.t};
   if(cfg.diff!=='normal')setTimeout(()=>toast(cfg.diff==='relaxed'?LX('😌 Relaxed difficulty: calm skies.','😌 Dificultad relajada: cielo tranquilo.'):LX('🧗 Expedition difficulty: expect trouble!','🧗 Dificultad expedición: ¡prepárate para problemas!'),false,2800),4800);}
 // ---------------- sample completion: juice, bonuses, journal, achievements, classroom
 const _checkDone=checkDone;checkDone=function(m){const s=st(m.c);const was=s.done;const sc0=S.score;_checkDone.apply(this,arguments);if(was||!s.done)return;
@@ -3121,7 +3120,7 @@ const _checkDone=checkDone;checkDone=function(m){const s=st(m.c);const was=s.don
   if(msgs.length)setTimeout(()=>toast(msgs.join('<br>'),false,3600),2600);
   journal[m.c]={v:Object.assign({},s.probe&&s.probe.v||{}),d:new Date().toISOString().slice(0,10),n:charNames&&charNames[charIdx]};SS('cfc_journal',journal);
   if(WX.snow>.3||WX.type==='snow')unlock('snow');if(WX.night>.5)unlock('night');if(cfg.diff==='expedition')unlock('expedition');
-  if(X.run&&X.run.goal&&!X.run.done){const n=X.run.sites?X.run.sites.filter(c=>st(c).done).length:S.samples.length-(X.run.n0||0);if(n>=X.run.goal)setTimeout(finishRun,3600);}};
+  };
 const _showSiteCard=showSiteCard;showSiteCard=function(m){const before=modal;_showSiteCard.apply(this,arguments);if(!cfg.quiz||modal===before||!modal)return;const o=modal;const oc=o.onclose;o.onclose=function(){oc&&oc.apply(this,arguments);setTimeout(()=>openQuiz(m),200);};};
 function quizFor(m){const s=st(m.c);const v=(s.probe&&s.probe.v)||{};const Q=[];
   if(v.pH!==undefined){const p=v.pH;Q.push({q:LX(`The water at ${m.en} had pH ${fmtV(p,1)}. How would you classify it?`,`El agua de ${m.en} tuvo pH ${fmtV(p,1)}. ¿Cómo la clasificarías?`),
@@ -3141,32 +3140,6 @@ function openQuiz(m){if(modal)return;const Q=quizFor(m);if(!Q.length)return;let 
       if(good){ok++;const pts=Math.round(20*mult());S.score+=pts;life.quiz++;lifeDirty=1;AU.sfx.tada();powAt(LX('CORRECT!','¡CORRECTO!')+' +'+pts,'#8ac926',38,.4);}else AU.sfx.beep&&AU.sfx.beep();
       $('#xa-qn').style.display='';});
       $('#xa-qn').onclick=()=>{closeModal();i++;if(i<Q.length)setTimeout(render,120);else{save();toast(`🎓 ${ok}/${Q.length} ${LX('correct','correctas')}`,false,2500);}};}});};render();}
-// ---------------- run completion (time trial / daily) + local records
-function finishRun(){const R=X.run;if(!R||R.done)return;R.done=true;const time=S.t-R.t0;const name=(charNames&&charNames[charIdx])||'Scientist';
-  const key=R.mode==='ta'?'cfc_ta_board':'cfc_daily_'+dailyKey();const board=LS(key,[]);const me={n:name,t:time,s:S.score,d:dailyKey(),diff:R.diff,id:Date.now()};board.push(me);board.sort((a,b)=>a.t-b.t);SS(key,board.slice(0,15));
-  unlock(R.mode==='ta'?'ta':'daily');if(R.mode==='ta')ghostSave(time);
-  const rows=LS(key,[]);const rank=rows.findIndex(r=>r.id===me.id)+1;
-  if(modal)closeModal();
-  openModal({title:R.mode==='ta'?'🏁 '+LX('TIME TRIAL COMPLETE','¡CONTRARRELOJ COMPLETA!'):'📅 '+LX('DAILY CHALLENGE COMPLETE','¡DESAFÍO DIARIO COMPLETO!'),meta:`${fmtT(time)} · ${LX('score','puntaje')} ${S.score}`,col:'#ffd23f',close:false,
-    html:`<p style="font-size:20px">${rank===1?'🥇 '+LX('New personal record!','¡Nuevo récord personal!'):LX('Rank','Posición')+' #'+rank}</p>${recTable(rows,me.id)}
-     <p class="note">${LX('Records are saved in this browser.','Los récords se guardan en este navegador.')}</p><div class="g-row"><button class="g-btn y" id="xa-r1">↻ ${LX('TRY AGAIN','OTRA VEZ')}</button><button class="g-btn" id="xa-r2">🛻 ${LX('KEEP DRIVING','SEGUIR MANEJANDO')}</button><button class="g-btn" id="xa-r3">🏠 ${LX('TITLE','MENÚ')}</button></div>`,
-    init(){$('#xa-r1').onclick=()=>{closeModal();S.sites={};S.samples=[];S.score=0;S.t=0;S.shipped=false;S.target=null;S.quakeAt=QUAKE_AT;clearEruption();clearKits();resetPositions();save();start();};
-      $('#xa-r2').onclick=()=>{closeModal();X.run.goal=null;};$('#xa-r3').onclick=()=>{closeModal();showTitle();};}});
-  AU.sfx.tada();}
-function recTable(rows,mine){if(!rows.length)return `<p class="note">${LX('No runs yet.','Aún no hay partidas.')}</p>`;const td='style="border:1.5px solid #1d1a2b;padding:3px 6px"';
-  return `<table style="width:100%;border-collapse:collapse;background:#fff;font-size:13px"><tr><th ${td}>#</th><th ${td}>${LX('Scientist','Científico/a')}</th><th ${td}>${LX('Time','Tiempo')}</th><th ${td}>${LX('Score','Puntaje')}</th><th ${td}>${LX('Difficulty','Dificultad')}</th><th ${td}>${LX('Date','Fecha')}</th></tr>${rows.map((r,i)=>`<tr style="${r.id===mine?'background:#c9f7d8;font-weight:700':''}"><td ${td}>${i<3?['🥇','🥈','🥉'][i]:i+1}</td><td ${td}>${esc2(r.n)}</td><td ${td}>${fmtT(r.t)}</td><td ${td}>${r.s|0}</td><td ${td}>${r.diff||''}</td><td ${td}>${r.d}</td></tr>`).join('')}</table>`;}
-const _openHall=openHall;openHall=function(){_openHall.apply(this,arguments);const mb=$('#g-mb');if(!mb)return;$('#g-mm').textContent=LX('Your best runs on this device','Tus mejores partidas en este equipo');
-  const ex=document.createElement('div');ex.innerHTML=`<h4>🏁 ${LX('TIME TRIAL','CONTRARRELOJ')}</h4>${recTable(LS('cfc_ta_board',[]))}<h4>📅 ${LX('TODAY\'S CHALLENGE','DESAFÍO DE HOY')} (${dailyKey()})</h4>${recTable(LS('cfc_daily_'+dailyKey(),[]))}`;mb.appendChild(ex);};
-// ---------------- ghost race (time trial): replays your best run
-let ghost=null;
-function ghostStart(){if(ghost){Wd.scene.remove(ghost.g);ghost=null;}const best=LS('cfc_ta_ghost',null);if(!best||!best.p||best.p.length<4)return;
-  let g;try{g=makeTruck(PK.veh(VEH.type),'#b8f3ff');}catch(e){g=new THREE.Mesh(new THREE.BoxGeometry(.2,.1,.12),new THREE.MeshBasicMaterial({color:'#b8f3ff'}));}
-  g.traverse(o=>{if(o.material){o.material=o.material.clone();o.material.transparent=true;o.material.opacity=.42;o.material.depthWrite=false;}o.castShadow=false;});Wd.scene.add(g);ghost={g,p:best.p,t:best.t};
-  setTimeout(()=>toast(LX(`👻 Your best time (${fmtT(best.t)}) races you as a ghost truck.`,`👻 Tu mejor tiempo (${fmtT(best.t)}) te corre como camioneta fantasma.`),false,3500),5200);}
-function ghostSave(time){const best=LS('cfc_ta_ghost',null);if(!best||time<best.t)SS('cfc_ta_ghost',{t:time,p:X.run.path.slice(0,3000)});}
-function ghostUpd(){if(!ghost||!X.run)return;const tt=(S.t-X.run.t0)/.5;const i=Math.floor(tt),f=tt-i;const P=ghost.p;if(i>=P.length-1){ghost.g.visible=false;return;}
-  const a=P[i],b=P[i+1];const x=a[0]+(b[0]-a[0])*f,z=a[1]+(b[1]-a[1])*f;ghost.g.visible=true;ghost.g.position.set(x,Wd.heightAt(x,z),z);ghost.g.rotation.set(0,a[2]+angDiff(a[2],b[2])*f,0);}
-const angDiff=(a,b)=>((b-a+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
 // ---------------- road events
 const EVT={next:80,cur:null};
 const gmat=c=>Wd.toon(c);
@@ -3231,9 +3204,8 @@ const _clearEruption=clearEruption;clearEruption=function(){_clearEruption.apply
 const lerpV=(v,arr,k)=>v.set(v.x+(arr[0]-v.x)*k,v.y+(arr[1]-v.y)*k,v.z+(arr[2]-v.z)*k);
 let redK=0;
 const _uwe=updateWorldEnv;updateWorldEnv=function(dt,active){
-  if(active&&!WX.type){if(cfg.diff==='relaxed')WX.next=Math.max(WX.next,9999);else if(cfg.diff==='expedition'&&WX.next>55)WX.next=55;if(X.run&&X.run.forceWx&&WX.next>8){WX.next=8;}}
+  if(active&&!WX.type){if(cfg.diff==='relaxed')WX.next=Math.max(WX.next,9999);else if(cfg.diff==='expedition'&&WX.next>55)WX.next=55;}
   _uwe.apply(this,arguments);
-  if(X.run&&X.run.forceWx&&WX.type){if(WX.type!==X.run.forceWx)WX.type=X.run.forceWx;X.run.forceWx=null;}
   const u=Wd.postMat.uniforms;redK+=((EV.st==='erupt'?1:EV.st==='quake'?.25:0)-redK)*Math.min(1,dt*.8);
   if(redK>.01){lerpV(u.skyT.value,[.5,.1,.08],redK*.85);lerpV(u.skyB.value,[1,.42,.18],redK*.8);lerpV(u.tint.value,[1.12,.82,.72],redK*.55);}
   const E=EVT.cur;if(E&&E.k==='fog'){const f=Math.min(1,E.t/3,(E.dur-E.t)/3);u.snowK.value=Math.max(u.snowK.value,.5*f);}
@@ -3297,7 +3269,7 @@ function dryNear(x,z){let anchor=null,ad=1e9;for(const m of M){if(st(m.c).done)c
   for(let r=.05;r<3;r+=.05)for(let a=0;a<36;a++){const q=a/36*6.283,px=x+Math.cos(q)*r,pz=z+Math.sin(q)*r;if(dryOK(px,pz,null))return [px,pz];}return [x,z];}
 const _addKit=addKit;addKit=function(x,z){const p=dryNear(x,z);const r=_addKit.call(this,p[0],p[1]);if(Math.hypot(p[0]-x,p[1]-z)>.05&&mode==='play')setTimeout(()=>toast(LX('🎒 Kit set up on dry ground next to the water.','🎒 Kit armado en suelo seco, al lado del agua.'),false,2200),4300);return r;};
 // ---------------- main per-frame
-X.dbg={kitTest:(c)=>{const m=M.find(q=>q.c===c);addKit(m.ax,m.az);const k=kits[kits.length-1];const r=riverHW(k.x,k.z);return {site:[m.ax,m.az],kit:[k.x,k.z],dist:Math.hypot(k.x-m.ax,k.z-m.az),riverD:r.d,hw:r.hw,dl:Wd.infoAt(k.x,k.z).dl,ws:Wd.RIVERS.map(R=>R.w)};},erupt:()=>startEruption(),night:()=>{WX.tod=22.5;},cd:(c)=>{const m=M.find(q=>q.c===c);const s=st(c);s.probe={v:(m.smp&&m.smp.v)||{pH:2.1,'Temp.[ºC]':40},t:8};s.filt={rupt:0,m045:1,m022:1,t:20};checkDone(m);},startEvt,EVT,finishRun,openQuiz,cfg,pow,checkAch,TB,togglePhoto,openJournal,openAch};
+X.dbg={kitTest:(c)=>{const m=M.find(q=>q.c===c);addKit(m.ax,m.az);const k=kits[kits.length-1];const r=riverHW(k.x,k.z);return {site:[m.ax,m.az],kit:[k.x,k.z],dist:Math.hypot(k.x-m.ax,k.z-m.az),riverD:r.d,hw:r.hw,dl:Wd.infoAt(k.x,k.z).dl,ws:Wd.RIVERS.map(R=>R.w)};},erupt:()=>startEruption(),night:()=>{WX.tod=22.5;},cd:(c)=>{const m=M.find(q=>q.c===c);const s=st(c);s.probe={v:(m.smp&&m.smp.v)||{pH:2.1,'Temp.[ºC]':40},t:8};s.filt={rupt:0,m045:1,m022:1,t:20};checkDone(m);},startEvt,EVT,openQuiz,cfg,pow,checkAch,TB,togglePhoto,openJournal,openAch};
 const _gt=GAME.tick;GAME.tick=function(dt,t){
   if(X.photo){Wd.controls.update();updPows();speedEl.style.opacity=0;return;}
   _gt.apply(this,arguments);
@@ -3317,13 +3289,8 @@ const _gt=GAME.tick;GAME.tick=function(dt,t){
   updDust(dt);
   // footprints
   if(!pl.inTruck&&mode==='play'){const ps=Math.floor(pl.walk/Math.PI);if(ps!==lastStep){lastStep=ps;const E=Wd.infoAt(pl.x,pl.z),al=meters(Wd.heightAt(pl.x,pl.z));if(al>2300||E.dv<5.5)footprint();}}
-  // km + ghost path
+  // km driven
   if(pl.inTruck&&mode==='play'){life.km+=Math.abs(truck.speed)*dt;lifeDirty=1;}
-  if(X.run&&!X.run.done&&mode==='play'){X.run.pt-=dt;if(X.run.pt<=0){X.run.pt=.5;if(X.run.path.length<3000)X.run.path.push([+pl.x.toFixed(3),+pl.z.toFixed(3),+(pl.inTruck?truck.yaw:pl.yaw).toFixed(2)]);}}
-  ghostUpd();
-  // goal HUD
-  const gEl=$('#xa-goal');if(X.run&&X.run.goal&&!X.run.done&&mode==='play'){const n=X.run.sites?X.run.sites.filter(c=>st(c).done).length:S.samples.length;gEl.style.display='';
-    gEl.innerHTML=(X.run.mode==='ta'?'🏁 ':'📅 ')+`${n}/${X.run.goal} · ⏱ ${fmtT(S.t-X.run.t0)}`+(X.run.sites?'<br><small>'+X.run.sites.map(c=>(st(c).done?'✔':'•')+' '+c.replace('_','–')).join('  ')+'</small>':'');}else gEl.style.display='none';
   // pour / fill onomatopoeia
   if(prevCarry===0&&pl.carry>0)powAt('¡GLUG GLUG!','#4cc9f0',36,.3);if(prevCarry>0&&pl.carry===0&&!pl.inTruck)powAt('¡SPLOSH!','#4cc9f0',36,.3);prevCarry=pl.carry;
   // volcano state changes
