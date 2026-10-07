@@ -50,6 +50,16 @@ Copia local de la v7 (Sandbox v7 Copy). La v7 original no se toca.
 - v8.21: Salón de la Fama compartido por todos los jugadores en Firebase Firestore (proyecto copahue-ranking, colección `scores`). Las reglas de seguridad están en `firestore.rules`: cualquiera lee y agrega un puntaje válido, nadie edita ni borra. Si Firebase no responde en 8 s se usa el ranking local del navegador; cada partida también se guarda localmente.
 - Respaldo de antes de este cambio: ../_respaldos/copahue-v8_antes-equipo3D/
 
+## v8.18–v8.19 (oct 2026): radio, menú plegable, noche y cielo real
+- **Radio Copahue FM**: `js/radio.js` + carpeta `music/` (T play/pausa, `,` anterior, `.` siguiente). Para sumar canciones, copiar el mp3 y añadir una línea a `TRACKS`.
+- **Remix (🔀 o tecla I, activado por defecto)**: cada ~1 min (50–70 s) cambia de canción con fundidos, empezando en un punto cualquiera de cada una; recorre todas antes de repetir. Apagado = canciones completas en orden. Requiere servidor con Range (`tools/serve.py`; GitHub Pages sirve).
+- **Servidor local**: `python3 tools/serve.py` → http://localhost:8000 (`?hora=0` para probar de noche).
+- **Linterna en primera persona** (de noche): haz frontal + círculo de luz en el suelo.
+- **Menú plegable**: `js/hudmenu.js` (solo queda el cartel amarillo; el resto aparece al pasar el mouse).
+- **Noche**: más clara, luz de luna azulada y luna blanca grande (opuesta al sol, en el cielo norte).
+- **Cielo real** (modo cómic y real): `data/sky/sky_stars.webp` es un mapa de ~5000 estrellas reales (Hipparcos), Vía Láctea y Nubes de Magallanes, sin líneas ni nombres. El shader lo gira según la hora del juego para la latitud de Copahue (37,85° S), así que se ven la Cruz del Sur, Orión, Escorpio, etc. en su lugar. Estrellas fugaces ocasionales. El mapa se regenera con `tools/bake_sky.py`.
+- Datos de estrellas: `d3-celestial` (Olaf Frohn, licencia BSD-3) sobre el catálogo Hipparcos.
+
 ## Pendiente
 - Ángulos de cine para sismo, erupción y llegada a la base.
 - Mejora visual (cielo, agua, vegetación, post-proceso) con tope 1080p.

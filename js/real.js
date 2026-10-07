@@ -24,20 +24,21 @@ const SKY=`vec3 skyCol(vec3 rd,vec3 sw,float night){float el=max(rd.y,-.05),se=s
 
 function makePost(){return new T.ShaderMaterial({defines:{AO:1,RAYS:1},
   uniforms:{tC:{value:null},tD:{value:null},tB:{value:null},res:{value:new T.Vector2(1,1)},near:{value:.05},far:{value:500},camR:{value:new T.Matrix3()},camP:{value:new T.Vector3()},
-    fovK:{value:new T.Vector2(1,1)},sunV:{value:new T.Vector3(0,1,0)},sunW:{value:new T.Vector3(0,1,0)},sunS:{value:new T.Vector3(.5,.5,0)},time:{value:0},night:{value:0},
+    fovK:{value:new T.Vector2(1,1)},sunV:{value:new T.Vector3(0,1,0)},sunW:{value:new T.Vector3(0,1,0)},sunS:{value:new T.Vector3(.5,.5,0)},moonW:{value:new T.Vector3(0,.7,-.7)},skyStars:{value:W.postMat.uniforms.skyStars.value},lst:{value:0},time:{value:0},night:{value:0},
     expo:{value:1.1},fogK:{value:1},cloudK:{value:.5},snowK:{value:0},mistK:{value:0},stars:{value:0}},
   vertexShader:VQ,depthTest:false,depthWrite:false,
-  fragmentShader:`uniform sampler2D tC,tD,tB;uniform vec2 res,fovK;uniform float near,far,time,night,expo,fogK,cloudK,snowK,mistK,stars;uniform mat3 camR;uniform vec3 camP,sunV,sunW,sunS;varying vec2 vUv;
+  fragmentShader:`uniform sampler2D tC,tD,tB;uniform vec2 res,fovK;uniform float near,far,time,night,expo,fogK,cloudK,snowK,mistK,stars;uniform mat3 camR;uniform vec3 camP,sunV,sunW,sunS,moonW;varying vec2 vUv;
   ${NOISE}${SKY}
+  ${window.SKYGLSL}
   float lin(float d){float z=d*2.-1.;return 2.*near*far/(far+near-z*(far-near));}
   vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
   void main(){float d=texture2D(tD,vUv).x;vec3 vd=normalize(vec3((vUv*2.-1.)*fovK,-1.));vec3 rd=normalize(camR*vd);vec3 col;
-    if(d>.99999){col=skyCol(rd,sunW,night);float mu=max(dot(vd,sunV),0.);col+=vec3(1.,.95,.85)*smoothstep(.9996,.9999,mu)*6.*(1.-night);
+    if(d>.99999){col=skyCol(rd,sunW,night);float mu=max(dot(vd,sunV),0.);col+=vec3(1.,.95,.85)*smoothstep(.9996,.9999,mu)*6.*(1.-night);if(stars>.01){col+=starMap(rd,time)*stars*smoothstep(-.02,.14,rd.y)*mix(.5,1.,smoothstep(0.,.35,rd.y))*4.2;}float mr=acos(clamp(dot(rd,moonW),-1.,1.));float MR=.11;{vec3 mt=normalize(cross(moonW,vec3(0.,1.,0.)));vec3 mb=cross(mt,moonW);vec2 mq=vec2(dot(rd,mt),dot(rd,mb))/MR;float mdisc=1.-smoothstep(MR*.97,MR,mr);float mar=smoothstep(.5,.72,fbm(mq*1.7+4.))*.5+smoothstep(.6,.8,fbm(mq*5.+9.))*.12;vec3 mc=mix(vec3(1.,.99,.95),vec3(.74,.77,.84),mar)*(1.-.12*dot(mq,mq));float mg=exp(-pow(mr/(MR*2.6),2.))*.34+exp(-pow(mr/(MR*7.),2.))*.12;col+=vec3(.78,.86,1.)*mg*night*1.6;col=mix(col,mc*3.4,mdisc*night);}
       if(rd.y>0.){vec2 cp=rd.xz/(rd.y+.09)*.55+vec2(time*.006,time*.002);float n=fbm(cp*1.6),n2=fbm(cp*1.6+sunW.xz*.06);
         float cov=smoothstep(.62-cloudK*.28,.8-cloudK*.28,n)*smoothstep(0.,.1,rd.y);float lit=clamp(.55+(n-n2)*5.,.15,1.);
         vec3 cc=mix(vec3(.48,.52,.6),vec3(1.,.97,.92),lit)*mix(1.,.3,night);cc+=vec3(1.,.7,.45)*pow(mu,5.)*.6*(1.-night);
         float ci=smoothstep(.55,.85,fbm(vec2(cp.x*.4,cp.y*3.)+3.))*.35*(1.-cov);col=mix(col,cc,cov*.95);col+=vec3(.9,.9,.95)*ci*(1.-night)*.5;}
-      {vec2 sc=floor(gl_FragCoord.xy/2.);float h=hs(sc);col+=vec3(step(.998,h))*stars*smoothstep(.1,.5,rd.y)*(.6+.4*sin(time*2.+h*40.));}
+      col+=vec3(1.,.95,.85)*meteors(vUv,time,res.x/res.y)*stars*3.2;
       col=mix(col,vec3(.8,.82,.86),snowK);}
     else{col=texture2D(tC,vUv).rgb;float dc=lin(d);vec3 wp=camP+camR*(vec3((vUv*2.-1.)*fovK,-1.)*dc);
       #if AO
@@ -133,10 +134,10 @@ REAL.frame=function(dt,t){if(!ready){if(window.WORLD&&WORLD.rt)setup();else retu
   const night=P.stars.value;if(Math.abs(t-envT)>20||REAL._n==null||Math.abs(REAL._n-night)>.15){envT=t;REAL._n=night;updateEnv(night);}
   const C=W.camera,U=post.uniforms;const sw=v.copy(W.sun.position).sub(W.sun.target.position).normalize();U.sunW.value.copy(sw);U.sunV.value.copy(sw).transformDirection(C.matrixWorldInverse);
   U.camR.value.setFromMatrix4(C.matrixWorld);U.camP.value.copy(C.position);const th=Math.tan(C.fov*Math.PI/360);U.fovK.value.set(th*C.aspect,th);U.near.value=C.near;U.far.value=C.far;U.time.value=t;
-  U.night.value=night;U.stars.value=night;U.cloudK.value=P.cloudK?P.cloudK.value:.5;U.snowK.value=P.snowK.value;U.mistK.value=P.mistK?P.mistK.value:0;
+  if(P.moonW)U.moonW.value.copy(P.moonW.value);U.lst.value=P.lst.value;U.night.value=night;U.stars.value=night;U.cloudK.value=P.cloudK?P.cloudK.value:.5;U.snowK.value=P.snowK.value;U.mistK.value=P.mistK?P.mistK.value:0;
   (W.waterMats||[]).concat(W.riverMats||[]).forEach(m=>{if(m.uniforms&&m.uniforms.sunW){m.uniforms.sunW.value.copy(sw);m.uniforms.realK.value=1;}});
   const sp=C.position.clone().addScaledVector(sw,100).project(C);U.sunS.value.set(sp.x*.5+.5,sp.y*.5+.5,(sp.z<1&&Math.abs(sp.x)<1.6&&Math.abs(sp.y)<1.6)?1:0);
-  W.sun.intensity=(1.+.25*(1-night))*(1-night*.85);W.hemi.intensity=.24*(1-night*.7)+.04;U.expo.value=.74+night*.06;  // night stays dark (exposure used to go UP at night)
+  W.sun.intensity=(1.+.25*(1-night))*(1-night*.68);W.hemi.intensity=.24*(1-night*.5)+.09;U.expo.value=.74+night*.2;  // night stays dark (exposure used to go UP at night)
   post.defines.AO=W.GFX.level==='low'?0:1;post.defines.RAYS=W.GFX.level==='low'?0:1;if(post.defines._l!==W.GFX.level){post.defines._l=W.GFX.level;post.needsUpdate=true;}
   try{reflect();}catch(e){console.warn('refl',e);setRefl(0);}
   return true;};

@@ -903,7 +903,7 @@ function updateVillage(dt,t){
 }
 
 // ------------------------------------------------------------ DAY / NIGHT + WEATHER
-const WX={tod:8,day:1,type:null,t:0,dur:0,k:0,next:100+Math.random()*80,cover:0,night:0,parts:null,rain:null,block:false};
+const WX={tod:(()=>{const h=parseFloat(new URLSearchParams(location.search).get('hora'));return isFinite(h)?((h%24)+24)%24:8;})(),day:1,type:null,t:0,dur:0,k:0,next:260+Math.random()*180,cover:0,night:0,parts:null,rain:null,block:false};
 const V3=THREE.Vector3;
 function lerp3(a,b,t){return [lerp(a[0],b[0],t),lerp(a[1],b[1],t),lerp(a[2],b[2],t)];}
 function buildWeather(){
@@ -917,18 +917,39 @@ function buildWeather(){
   const bmat=new THREE.MeshBasicMaterial({color:0xfff2c0,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});const bm=new THREE.Group();[-1,1].forEach(sd=>{const c=new THREE.Mesh(new THREE.ConeGeometry(.055,.42,16,1,true).rotateZ(Math.PI/2).translate(.29,.035,.024*sd).rotateY(-.06*sd),bmat);bm.add(c);});bm.material=bmat;truck.g.add(bm);WX.beam=bm;
   WX.lamps=[-1,1].map(sd=>{const m=new THREE.Mesh(new THREE.BoxGeometry(.004,.01,.014),new THREE.MeshBasicMaterial({color:0xfff2c0}));m.position.set(.081,.042,.024*sd);const gw=new THREE.Mesh(new THREE.SphereGeometry(.014,10,8),new THREE.MeshBasicMaterial({color:0xfff6d0,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}));gw.position.x=.004;m.add(gw);m.userData.glow=gw;truck.g.add(m);return m;});
 }
+// ---------- first-person headlamp (the body model is hidden in FP, so it gets its own beam + light pool)
+let FPL=null;const _fpP=new THREE.Vector3(),_fpD=new THREE.Vector3(),_fpQ=new THREE.Vector3(),_fpN=new THREE.Vector3(),_yUp=new THREE.Vector3(0,1,0),_yDn=new THREE.Vector3(0,-1,0);
+function makeFpLamp(){
+  const h=.7,r=.075,g=new THREE.ConeGeometry(r,h,24,1,true).translate(0,-h/2,0),pos=g.attributes.position,col=new Float32Array(pos.count*3);
+  for(let i=0;i<pos.count;i++){const v=pos.getY(i)>-h/2?1:0;col[i*3]=col[i*3+1]=col[i*3+2]=v;}g.setAttribute('color',new THREE.BufferAttribute(col,3));
+  const cone=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xfff2c8,vertexColors:true,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}));cone.frustumCulled=false;cone.renderOrder=6;
+  const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),gr=x.createRadialGradient(64,64,2,64,64,64);gr.addColorStop(0,'rgba(255,238,190,.85)');gr.addColorStop(.4,'rgba(255,230,170,.38)');gr.addColorStop(1,'rgba(255,224,160,0)');x.fillStyle=gr;x.fillRect(0,0,128,128);
+  const pool=new THREE.Mesh(new THREE.CircleGeometry(1,28).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));pool.frustumCulled=false;pool.renderOrder=5;
+  Wd.scene.add(cone);Wd.scene.add(pool);return {cone,pool};}
+function updFpLamp(n){
+  const on=n>.05&&fpOn();if(!FPL){if(!on)return;FPL=makeFpLamp();}
+  FPL.cone.visible=on;if(!on){FPL.pool.visible=false;return;}
+  const C=Wd.camera;C.getWorldPosition(_fpP);C.getWorldDirection(_fpD);
+  FPL.cone.position.copy(_fpP).addScaledVector(_fpD,.012);FPL.cone.position.y-=.026;FPL.cone.quaternion.setFromUnitVectors(_yDn,_fpD);FPL.cone.material.opacity=Math.min(1,n)*.16;
+  // where the beam meets the ground
+  let hit=-1,t0=.04;for(let t=.06;t<=1.7;t+=.06){_fpQ.copy(_fpP).addScaledVector(_fpD,t);if(_fpQ.y<Wd.heightAt(_fpQ.x,_fpQ.z)){hit=t;break;}t0=t;}
+  if(hit<0){FPL.pool.visible=false;return;}
+  let a=t0,b=hit;for(let i=0;i<4;i++){const m=(a+b)/2;_fpQ.copy(_fpP).addScaledVector(_fpD,m);if(_fpQ.y<Wd.heightAt(_fpQ.x,_fpQ.z))b=m;else a=m;}
+  _fpQ.copy(_fpP).addScaledVector(_fpD,b);const gx=_fpQ.x,gz=_fpQ.z,gy=Wd.heightAt(gx,gz),e=.012;
+  _fpN.set(Wd.heightAt(gx-e,gz)-Wd.heightAt(gx+e,gz),2*e,Wd.heightAt(gx,gz-e)-Wd.heightAt(gx,gz+e)).normalize();
+  const P=FPL.pool;P.visible=true;P.position.set(gx,gy+.003,gz);P.quaternion.setFromUnitVectors(_yUp,_fpN);const rr=.022+.05*b;P.scale.set(rr,rr,rr);P.material.opacity=Math.min(1,n)*.4*Math.max(0,1-b/1.9);}
 function updateWorldEnv(dt,active){
   if(active){const nightish=WX.tod>=19.5||WX.tod<5.5;WX.tod+=dt*(nightish?.12:.05);if(WX.tod>=24){WX.tod-=24;WX.day++;}}
   const el=Math.sin((WX.tod-6)/12*Math.PI);                         // sun elevation proxy (−1..1)
   const n=clamp(1-(el+.12)/.3,0,1),gold=clamp(1-Math.abs(el-.08)/.16,0,1)*(1-n);WX.night=n;
-  let tint=lerp3(lerp3([1,1,1],[1.06,.9,.78],gold),[.6,.64,.84],n);
-  let top=lerp3(lerp3([.36,.76,1],[.52,.58,.9],gold),[.12,.15,.32],n),bot=lerp3(lerp3([1,.94,.76],[1,.72,.48],gold),[.22,.22,.38],n);
+  let tint=lerp3(lerp3([1,1,1],[1.06,.9,.78],gold),[.76,.82,1.04],n);
+  let top=lerp3(lerp3([.36,.76,1],[.52,.58,.9],gold),[.17,.22,.46],n),bot=lerp3(lerp3([1,.94,.76],[1,.72,.48],gold),[.3,.33,.55],n);
   // weather events
   if(active){
-    if(!WX.type){WX.next-=dt;if(WX.next<=0){const alt=meters(Wd.heightAt(pl.x,pl.z));const snowP=alt>2000?.7:alt>1500?.5:.3;
+    if(!WX.type){WX.next-=dt;if(WX.next<=0){const alt=meters(Wd.heightAt(pl.x,pl.z));const snowP=alt>2000?.5:alt>1500?.3:.15;
         WX.type=Math.random()<snowP?'snow':'rain';WX.dur=WX.type==='snow'?30:45+Math.random()*35;WX.t=0;
         toast(WX.type==='snow'?'❄ A snow squall is rolling in from the Andes! For about 30 seconds you won\'t be able to walk or sample. Take shelter in the truck.':'🌧 Rain shower. Keep working, but mind the slippery rocks.',WX.type==='snow',4500);}}
-    else{WX.t+=dt;if(WX.t>=WX.dur){if(WX.type==='snow')toast('☀ The squall has passed. Back to work!',false,2500);WX.type=null;WX.next=120+Math.random()*150;}}
+    else{WX.t+=dt;if(WX.t>=WX.dur){if(WX.type==='snow')toast('☀ The squall has passed. Back to work!',false,2500);WX.type=null;WX.next=330+Math.random()*300;}}
   }
   const want=WX.type?(WX.t<5?WX.t/5:WX.t>WX.dur-5?(WX.dur-WX.t)/5:1):0;WX.k+=(want-WX.k)*Math.min(1,dt*2);
   const snow=WX.type==='snow'?WX.k:0,rain=WX.type==='rain'?WX.k:0;WX.snow=snow;WX.rainK=rain;
@@ -938,13 +959,15 @@ function updateWorldEnv(dt,active){
   const u=Wd.postMat.uniforms;u.tint.value.set(...tint);u.skyT.value.set(...top);u.skyB.value.set(...bot);u.stars.value=n*(1-Math.max(snow,rain));u.snowK.value=snow*.42+WX.cover*.08;
   {const C=Wd.camera,hG=C.position.y-Wd.heightAt(C.position.x,C.position.z);const tod=WX.tod,morn=tod<5?.3:tod<9.5?1:tod<11.5?1-(tod-9.5)/2:tod>18.5&&tod<22?.45:tod>=22?.3:0;
     u.mistK.value=clamp(Math.max(morn,Math.max(snow,rain)*.7),0,1)*clamp(1-(hG-.6)/2.4,0,1);u.cloudK.value=.5+Math.max(snow,rain)*.4;}
-  Wd.sun.intensity=.78*(1-n*.55)*(1-.3*Math.max(snow,rain));
+  Wd.sun.intensity=.78*(1-n*.36)*(1-.3*Math.max(snow,rain));
   {const wm=gold*(1-Math.max(snow,rain));Wd.sun.color.setRGB(lerp(1,1,wm)*lerp(1,.62,n),lerp(1,.8,wm)*lerp(1,.72,n),lerp(1,.58,wm)*lerp(1,1,n));Wd.hemi.color.setRGB(1,lerp(.96,.86,wm),lerp(.84,.7,wm));}  // warm dawn/dusk light, cool moonlight
-  Wd.hemi.intensity=.5*(1-n*.45);
-  {const lum=1-n*.5*(1-.3*Math.max(snow,rain));[...Wd.waterMats,...(Wd.riverMats||[])].forEach(m=>{if(m.uniforms&&m.uniforms.lum)m.uniforms.lum.value=lum;});}  // unlit water and mud dim at night like everything else (they used to glow)
+  Wd.hemi.intensity=.5*(1-n*.2);
+  {const lum=1-n*.3*(1-.3*Math.max(snow,rain));[...Wd.waterMats,...(Wd.riverMats||[])].forEach(m=>{if(m.uniforms&&m.uniforms.lum)m.uniforms.lum.value=lum;});}  // unlit water and mud dim at night like everything else (they used to glow)
   const sa=(WX.tod-6)/12*Math.PI;Wd.sun.position.set(-40*Math.cos(sa),10+40*Math.max(.15,Math.sin(sa)),16);
+  {const mp=new THREE.Vector3(40*Math.cos(sa),6+14*Math.max(0,-Math.sin(sa)),34);u.moonW.value.copy(mp).normalize();u.lst.value=(((15*(WX.tod-12)+193+.9856*(WX.day-1))%360+360)%360)*Math.PI/180;Wd.sun.position.lerp(mp,n);}  // big white moon opposite the sun; at night the light (and shadows) come from it
   if(WX.beam){WX.beam.material.opacity=n*.3;WX.beam.visible=n>.05;WX.lamps.forEach(m=>{m.material.color.setRGB(1,.95*(n>.3?1:.8),n>.3?.75:.55);m.userData.glow.material.opacity=n*.85;m.userData.glow.visible=n>.05;});}
   if(pl.g&&pl.g.userData.hl){const H=pl.g.userData.hl,on=n>.05&&!pl.inTruck;H.beam.visible=H.glow.visible=on;H.beam.material.opacity=n*.32;H.glow.material.opacity=n*.9;H.bulb.material.color.setRGB(1,1,n>.3?.8:.6);}
+  updFpLamp(n);
   // particles follow the camera target
   const c=Wd.controls.target;
   if(WX.parts){const pm=WX.parts.material;pm.opacity=snow*.95;WX.parts.visible=snow>.02;WX.parts.position.set(c.x,c.y-1.2,c.z);
@@ -1349,21 +1372,61 @@ const IDOLS=[{f:1,skin:'#f1d2bc',hair:'#ff7eb6',style:'long',top:'#ffffff',jacke
     teller:[L2('Our stories have no seals… but there could be one.','En nuestras historias no hay focas… pero podría haber una.'),L2('Mañum for the seal story.','Mañum por la historia de las focas.')],
     caniche:[L2('Che, there are no seals up here, but there are guanacos.','Che, acá arriba no hay focas, pero hay guanacos.'),L2('Seals? I take you to the crater, not to Península Valdés.','¿Focas? Yo te llevo al cráter, no a Península Valdés.')],
     boat:[L2('Sofi?! But Sofi is right here on the boat with me!','¡¿Sofi?! ¡Pero si Sofi está aquí en el bote conmigo!'),L2('If I see a seal in the lake I will let you know!','¡Si veo una foca en el lago te aviso!')]};
-  const PAPERS=[[L2('Acidithiobacillus and me: an acidic love story','Acidithiobacillus y yo: una historia de amor ácido'),L2('Why is the Río Agrio sour? (Spoiler: the volcano)','¿Por qué el Río Agrio es agrio? (Spoiler: el volcán)'),L2('Metagenomics of jerrycans forgotten in the truck','Metagenómica de bidones olvidados en la camioneta'),
-      L2('Effect of mate on 0.22 µm filtration efficiency','Efecto del mate en la eficiencia de filtración a 0,22 µm'),L2('Ferrovum: the microbe nobody invited but always shows up','Ferrovum: el microbio que nadie invitó pero siempre llega'),L2('pH 1 and other ways to lose a glove','pH 1 y otras formas de perder un guante'),L2('New high-quality MAGs of questionable origin','Nuevos MAGs de alta calidad y dudosa procedencia'),
-      L2('Reviewer 2 is an extremophile: evidence from 14 rejections','El revisor 2 es un extremófilo: evidencia de 14 rechazos'),L2('Leptospirillum does not answer e-mails','Leptospirillum no contesta los correos'),
-      L2('16S or not 16S: that is the question','16S o no 16S: esa es la cuestión'),L2('Sulfur, sweat and a broken Niskin bottle','Azufre, sudor y una botella Niskin rota'),
-      L2('Rotifers of Lake Caviahue: a love letter','Rotíferos del Lago Caviahue: una carta de amor'),L2('Horizontal gene transfer between me and my coffee cup','Transferencia horizontal de genes entre mi taza de café y yo'),
-      L2('On the impossibility of labelling a Falcon tube with gloves on','Sobre la imposibilidad de rotular un Falcon con guantes puestos'),L2('Iron-oxidizers at dawn: a sleepless sampling protocol','Ferrooxidantes al amanecer: un protocolo de muestreo sin dormir'),
-      L2('Supplementary Table S47 (the one nobody opens)','Tabla Suplementaria S47 (la que nadie abre)'),L2('Che, where is my sample? A spatial analysis','Che, ¿dónde está mi muestra? Un análisis espacial')],
-    [L2('Counting 10⁶ cells by hand (and other youthful mistakes)','Conteo manual de 10⁶ células (y otros errores de juventud)'),L2('Characterisation of the mud in the parking lot','Caracterización del barro del estacionamiento'),L2('Is the Copahue hot? A preliminary study','¿Está caliente el Copahue? Un estudio preliminar'),
-      L2('How many jerrycans fit in a pickup? An experimental approach','¿Cuántos bidones caben en una camioneta? Un enfoque experimental'),L2('Autoclave queue times in a shared lab','Tiempos de espera del autoclave en un laboratorio compartido'),
-      L2('The pH strip changed colour: now what?','La tira de pH cambió de color: ¿y ahora qué?'),L2('Culture media I forgot in the incubator (2019–2024)','Medios de cultivo que olvidé en la incubadora (2019–2024)'),
-      L2('Descriptive statistics of lost pipette tips','Estadística descriptiva de puntas de pipeta perdidas')],
-    [L2('Microbial ecophysiology of the Caviahue–Copahue system (Vol. I of VII)','Ecofisiología microbiana del sistema Caviahue–Copahue (Vol. I de VII)'),L2('Towards a unified theory of clogged membranes','Hacia una teoría unificada de las membranas tapadas'),L2('Archaea, sulfur and six years of my life','Arqueas, azufre y seis años de mi vida'),
-      L2('Life at pH 2: microbes, mate and resilience in the Andes','La vida a pH 2: microbios, mate y resiliencia en los Andes'),L2('Metagenomes of the Río Agrio and the author\'s mental health','Metagenomas del Río Agrio y la salud mental de la autora'),
-      L2('From Buenos Aires to the crater: a thesis in 412 figures','De Buenos Aires al cráter: una tesis en 412 figuras'),L2('Chapter 5 will be ready soon: a longitudinal study','El capítulo 5 ya casi está: un estudio longitudinal'),
-      L2('Extremophiles, extreme deadlines','Extremófilos, plazos extremos')]];
+  const PAPERS=[[L2('Acidithiobacillus and me: an acidic love story','Acidithiobacillus y yo: una historia de amor ácido'),
+      L2('Why is the Río Agrio sour? (Spoiler: the volcano)','¿Por qué el Río Agrio es agrio? (Spoiler: el volcán)'),
+      L2('Reviewer 2 is an extremophile: evidence from 14 rejections','El revisor 2 es un extremófilo: evidencia de 14 rechazos'),
+      L2('Supplementary Table S47 (the one nobody opens)','Tabla Suplementaria S47 (la que nadie abre)'),
+      L2('Leptospirillum does not answer e-mails','Leptospirillum no contesta los correos'),
+      L2('Metagenomics of jerrycans forgotten in the truck','Metagenómica de bidones olvidados en la camioneta'),
+      L2('Che, where is my sample? A spatial analysis','Che, ¿dónde está mi muestra? Un análisis espacial'),
+      L2('Ferrovum: the microbe nobody invited but always shows up','Ferrovum: el microbio que nadie invitó pero siempre llega'),
+      L2('We sequenced it twice and got two different stories','Lo secuenciamos dos veces y salieron dos historias distintas'),
+      L2('Absence of evidence is not evidence of absence (we forgot the negative control)','Ausencia de evidencia no es evidencia de ausencia (se nos olvidó el control negativo)'),
+      L2('Contamination or a new phylum? A 3 a.m. debate','¿Contaminación o nuevo filo? Un debate a las 3 a.m.'),
+      L2('The kitome: a ghost story told in reads per million','El kitoma: una historia de fantasmas contada en lecturas por millón'),
+      L2('MAG or mirage? Binning at 2 a.m.','¿MAG o espejismo? Binning a las 2 a.m.'),
+      L2('Everything correlates with pH, including my mood','Todo correlaciona con el pH, incluido mi ánimo'),
+      L2('Cites itself 37 times: a rigorous approach','Se cita a sí mismo 37 veces: un enfoque riguroso'),
+      L2('Don\'t panic: 2.4 TB of raw reads and one hard drive','No panic: 2,4 TB de lecturas crudas y un solo disco duro'),
+      L2('Preliminary results (the preliminary part is eight years old)','Resultados preliminares (lo preliminar tiene ocho años)'),
+      L2('p = 0.051: a tragedy in three acts','p = 0,051: una tragedia en tres actos'),
+      L2('Copy-pasting last year\'s methods: a longitudinal study','Copiar y pegar los métodos del año pasado: un estudio longitudinal'),
+      L2('Hot springs, cold feet: thermal tolerance of a field team','Aguas termales, pies fríos: tolerancia térmica de un equipo de terreno'),
+      L2('Sample 13 lost its label; here is what we think it was','La muestra 13 perdió su etiqueta; esto creemos que era'),
+      L2('Acidophilic researchers: a case study at pH 2 and 4 h of sleep','Investigadores acidófilos: caso de estudio a pH 2 y 4 h de sueño'),
+      L2('pH 1 and other ways to lose a glove','pH 1 y otras formas de perder un guante'),
+      L2('Horizontal gene transfer between me and my coffee cup','Transferencia horizontal de genes entre mi taza de café y yo'),
+      L2('On the impossibility of labelling a Falcon tube with gloves on','Sobre la imposibilidad de rotular un Falcon con guantes puestos')],
+    [L2('Is the Copahue hot? A preliminary study','¿Está caliente el Copahue? Un estudio preliminar'),
+      L2('The pH strip changed colour: now what?','La tira de pH cambió de color: ¿y ahora qué?'),
+      L2('Descriptive statistics of lost pipette tips','Estadística descriptiva de puntas de pipeta perdidas'),
+      L2('Autoclave queue times in a shared lab','Tiempos de espera del autoclave en un laboratorio compartido'),
+      L2('Culture media I forgot in the incubator (2019–2024)','Medios de cultivo que olvidé en la incubadora (2019–2024)'),
+      L2('Counting 10⁶ cells by hand (and other youthful mistakes)','Conteo manual de 10⁶ células (y otros errores de juventud)'),
+      L2('My advisor said "just a quick experiment" (6 years ago)','Mi guía dijo "un experimentito rápido" (hace 6 años)'),
+      L2('Pipetting under pressure: effect of the deadline on accuracy','Pipeteo bajo presión: efecto de la fecha de entrega en la precisión'),
+      L2('Gel electrophoresis: why only my lane is smiling','Electroforesis: por qué solo mi carril sonríe'),
+      L2('Coffee-to-data ratio in an undergraduate thesis','Razón café-datos en una tesis de pregrado'),
+      L2('Extracting DNA from sediment: 40 cm of mud, 0.3 ng of hope','Extrayendo ADN de sedimento: 40 cm de barro, 0,3 ng de esperanza'),
+      L2('The defense: 40 minutes of talk for 3 people who did not read it','La defensa: 40 minutos de charla para 3 personas que no la leyeron'),
+      L2('How many freeze-thaws until a sample stops being data?','¿Cuántos congelados y descongelados hasta que una muestra deja de ser dato?'),
+      L2('Bacteria that only grow the day after I throw the plate away','Bacterias que solo crecen el día después de botar la placa'),
+      L2('Characterisation of the mud in the parking lot','Caracterización del barro del estacionamiento'),
+      L2('How many jerrycans fit in a pickup? An experimental approach','¿Cuántos bidones caben en una camioneta? Un enfoque experimental')],
+    [L2('Microbial ecophysiology of the Caviahue–Copahue system (Vol. I of VII)','Ecofisiología microbiana del sistema Caviahue–Copahue (Vol. I de VII)'),
+      L2('Towards a unified theory of clogged membranes','Hacia una teoría unificada de las membranas tapadas'),
+      L2('Archaea, sulfur and six years of my life','Arqueas, azufre y seis años de mi vida'),
+      L2('Metagenomes of the Río Agrio and the author\'s mental health','Metagenomas del Río Agrio y la salud mental de la autora'),
+      L2('Chapter 5 will be ready soon: a longitudinal study','El capítulo 5 ya casi está: un estudio longitudinal'),
+      L2('Extremophiles, extreme deadlines','Extremófilos, plazos extremos'),
+      L2('Where did the funding go? A time series with no data points','¿Adónde se fue el financiamiento? Una serie de tiempo sin datos'),
+      L2('Acknowledgements: my cat, who sat on the keyboard for chapters 2 to 4','Agradecimientos: mi gato, que se sentó en el teclado en los capítulos 2 a 4'),
+      L2('300 pages answering a question I stopped asking in 2021','300 páginas para responder una pregunta que dejé de hacerme en 2021'),
+      L2('Annex 14: the experiment that worked, once','Anexo 14: el experimento que funcionó, una vez'),
+      L2('How a two-month side project became a six-year thesis','Cómo un proyecto paralelo de dos meses se volvió una tesis de seis años'),
+      L2('What my committee wanted vs. what the data said: a Venn diagram','Lo que quería mi comité vs. lo que dijeron los datos: un diagrama de Venn'),
+      L2('Life, acid and the pursuit of the final PDF (v47_FINAL_final2)','Vida, ácido y la búsqueda del PDF final (v47_FINAL_final2)'),
+      L2('Argentine–Chilean mate dynamics in acidic environments, in 3 volumes','Dinámica del mate argentino-chileno en ambientes ácidos, en 3 tomos')]];
   const PTYPE=[L2('📄 Paper','📄 Paper'),L2('📘 Undergrad thesis','📘 Tesis de pregrado'),L2('📕 PhD thesis','📕 Tesis de doctorado')];
   // ---------- actions
   function start(k,dur,extra){ps.act=Object.assign({k,t:0,dur,yaw:pl.yaw,g:pl.g,said:{}},extra||{});const A=ps.act,u=pl.g.userData;
@@ -3219,7 +3282,7 @@ const _clearEruption=clearEruption;clearEruption=function(){_clearEruption.apply
 const lerpV=(v,arr,k)=>v.set(v.x+(arr[0]-v.x)*k,v.y+(arr[1]-v.y)*k,v.z+(arr[2]-v.z)*k);
 let redK=0;
 const _uwe=updateWorldEnv;updateWorldEnv=function(dt,active){
-  if(active&&!WX.type){if(cfg.diff==='relaxed')WX.next=Math.max(WX.next,9999);else if(cfg.diff==='expedition'&&WX.next>55)WX.next=55;}
+  if(active&&!WX.type){if(cfg.diff==='relaxed')WX.next=Math.max(WX.next,9999);else if(cfg.diff==='expedition'&&WX.next>150)WX.next=150;}
   _uwe.apply(this,arguments);
   const u=Wd.postMat.uniforms;redK+=((EV.st==='erupt'?1:EV.st==='quake'?.25:0)-redK)*Math.min(1,dt*.8);
   if(redK>.01){lerpV(u.skyT.value,[.5,.1,.08],redK*.85);lerpV(u.skyB.value,[1,.42,.18],redK*.8);lerpV(u.tint.value,[1.12,.82,.72],redK*.55);}

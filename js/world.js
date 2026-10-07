@@ -957,27 +957,36 @@ const GFX=(()=>{let mode='auto';try{mode=localStorage.getItem('copahue.gfx')||'a
 })();
 const rt=new THREE.WebGLRenderTarget(1,1,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter});
 rt.depthTexture=new THREE.DepthTexture(1,1);rt.depthTexture.type=THREE.UnsignedIntType;
-const postMat=new THREE.ShaderMaterial({defines:{HQ:1,HATCH:1},uniforms:{aaK:{value:1},hazeK:{value:1},fovK:{value:new THREE.Vector2(1,1)},sunV:{value:new THREE.Vector3(0,1,0)},camR:{value:new THREE.Matrix3()},cloudK:{value:.55},camP:{value:new THREE.Vector3()},mistK:{value:0},inkW:{value:1.6},tC:{value:rt.texture},tD:{value:rt.depthTexture},tint:{value:new THREE.Vector3(1,1,1)},skyT:{value:new THREE.Vector3(.36,.76,1)},skyB:{value:new THREE.Vector3(1,.94,.76)},snowK:{value:0},stars:{value:0},res:{value:new THREE.Vector2()},near:{value:camera.near},far:{value:camera.far},dpr:{value:DPR},time:{value:0}},
+const skyStars=new THREE.TextureLoader().load('data/sky/sky_stars.webp');skyStars.minFilter=skyStars.magFilter=THREE.LinearFilter;skyStars.generateMipmaps=false;skyStars.wrapS=THREE.RepeatWrapping;
+window.SKYGLSL=`uniform sampler2D skyStars;uniform float lst;
+    vec3 starMap(vec3 rd,float tm){const float sp=-.61375,cp=.78950;float N=rd.z,E=-rd.x,U=rd.y;float Z=sp*U+cp*N,X=cp*U-sp*N,Y=-E;float ra=lst-atan(Y,X);
+      vec2 uv=vec2(fract(ra*.15915494),asin(clamp(Z,-1.,1.))*.31830989+.5);vec3 s=texture2D(skyStars,uv).rgb;
+      float h=hs(floor(uv*vec2(1800.,900.)));float tw=.8+.2*sin(tm*(2.5+5.*h)+h*60.);s*=mix(1.,tw,smoothstep(.12,.55,dot(s,vec3(.33))));return s;}
+    float meteors(vec2 uv,float t,float asp){float acc=0.;for(int j=0;j<2;j++){float fj=float(j);float P=17.+fj*6.;float tt=t/P+fj*.41;float k=floor(tt);float st=fract(tt)*P;
+        if(hs(vec2(k,fj*5.3))>.62&&st<1.1){float p=st/1.1;vec2 s0=vec2(.12+hs(vec2(k,2.+fj))*.76,.55+hs(vec2(k,4.+fj))*.4);float ang=-.55-hs(vec2(k,6.+fj))*1.9;vec2 dir=vec2(cos(ang),sin(ang));
+          vec2 q=(uv-s0)*vec2(asp,1.);float al=dot(q,dir);float pr=abs(dot(q,vec2(-dir.y,dir.x)));float head=p*.38;float tail=smoothstep(head-.17,head,al)*step(al,head);
+          acc+=tail*(1.-smoothstep(.0006,.0022,pr))*sin(3.14159*p)*(.7+.6*smoothstep(head-.03,head,al));}}return acc;}
+    `;  // real star map (Hipparcos) for lat 37.85°S + meteors; shared with real.js
+const postMat=new THREE.ShaderMaterial({defines:{HQ:1,HATCH:1},uniforms:{aaK:{value:1},hazeK:{value:1},fovK:{value:new THREE.Vector2(1,1)},sunV:{value:new THREE.Vector3(0,1,0)},camR:{value:new THREE.Matrix3()},cloudK:{value:.55},camP:{value:new THREE.Vector3()},mistK:{value:0},inkW:{value:1.6},tC:{value:rt.texture},tD:{value:rt.depthTexture},tint:{value:new THREE.Vector3(1,1,1)},skyT:{value:new THREE.Vector3(.36,.76,1)},skyB:{value:new THREE.Vector3(1,.94,.76)},snowK:{value:0},stars:{value:0},moonW:{value:new THREE.Vector3(0,.7,-.7)},skyStars:{value:skyStars},lst:{value:0},res:{value:new THREE.Vector2()},near:{value:camera.near},far:{value:camera.far},dpr:{value:DPR},time:{value:0}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,
-  fragmentShader:`uniform sampler2D tC,tD;uniform vec2 res;uniform float near,far,dpr,time;varying vec2 vUv;uniform vec3 tint,skyT,skyB,sunV;uniform vec2 fovK;uniform mat3 camR;uniform vec3 camP;uniform float snowK,stars,aaK,hazeK,cloudK,mistK;
+  fragmentShader:`uniform sampler2D tC,tD;uniform vec2 res;uniform float near,far,dpr,time;varying vec2 vUv;uniform vec3 tint,skyT,skyB,sunV,moonW;uniform vec2 fovK;uniform mat3 camR;uniform vec3 camP;uniform float snowK,stars,aaK,hazeK,cloudK,mistK;
     float hs(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
     float ns(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y);}
     float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*ns(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return v;}
     float lin(float d){float z=d*2.-1.;return 2.*near*far/(far+near-z*(far-near));}
     float lum(vec3 c){return dot(c,vec3(.299,.587,.114));}
+    ${window.SKYGLSL}
     void main(){vec2 px=dpr*1.1/res;float d=texture2D(tD,vUv).x;vec3 col=texture2D(tC,vUv).rgb;
       if(d>.99999){vec3 top=skyT,bot=skyB;vec3 vd=normalize(vec3((vUv*2.-1.)*fovK,-1.));vec3 rd=normalize(camR*vd);float el=rd.y;
         col=mix(bot,top,smoothstep(-.02,.6,el));col=mix(col,bot*1.06+vec3(.03),exp(-abs(el)*14.)*.55);if(el<0.)col=mix(col,bot*.8,smoothstep(0.,-.25,el));
         float sd=max(dot(vd,sunV),0.);float day=1.-stars;
-        col+=vec3(1.,.86,.62)*(pow(sd,90.)*.55+pow(sd,10.)*.14)*day;
+        col+=vec3(1.,.86,.62)*(pow(sd,90.)*.55+pow(sd,10.)*.14)*day;if(stars>.01){col+=starMap(rd,time)*stars*smoothstep(-.03,.16,el)*mix(.5,1.,smoothstep(0.,.35,el))*2.6;}float mr=acos(clamp(dot(rd,moonW),-1.,1.));float MR=.11;{vec3 mt=normalize(cross(moonW,vec3(0.,1.,0.)));vec3 mb=cross(mt,moonW);vec2 mq=vec2(dot(rd,mt),dot(rd,mb))/MR;float mdisc=1.-smoothstep(MR*.97,MR,mr);float mar=smoothstep(.5,.72,fbm(mq*1.7+4.))*.5+smoothstep(.6,.8,fbm(mq*5.+9.))*.12;vec3 mc=mix(vec3(1.,.99,.95),vec3(.74,.77,.84),mar)*(1.-.12*dot(mq,mq));float mg=exp(-pow(mr/(MR*2.6),2.))*.34+exp(-pow(mr/(MR*7.),2.))*.12;col+=vec3(.78,.86,1.)*mg*stars;col=mix(col,mc*1.12,mdisc*stars);}
         if(el>.0){vec2 cp=rd.xz/(el+.12)*.9+vec2(time*.012,time*.004);float cn=fbm(cp*1.3);float cov=smoothstep(.63-cloudK*.25,.69-cloudK*.25,cn)*smoothstep(.0,.12,el);
           float sh=fbm(cp*1.3+vec2(.06,.05));vec3 cc=mix(vec3(1.),mix(bot,top,.3)*.82+vec3(.08),smoothstep(.0,.03,sh-cn-.035)*.8*smoothstep(.04,.3,el));cc=mix(cc,cc*vec3(1.,.9,.85),pow(sd,6.)*.5);
-          cc=mix(cc,col,.15+stars*.6);col=mix(col,cc,cov*(.92-stars*.5));}{vec2 sc=floor(gl_FragCoord.xy/(3.*dpr));float h=fract(sin(dot(sc,vec2(12.9898,78.233)))*43758.5453);col+=vec3(step(.997,h))*stars*smoothstep(.3,.8,vUv.y)*(.6+.4*sin(time*2.+h*40.));}
+          cc=mix(cc,col,.15+stars*.6);col=mix(col,cc,cov*(.92-stars*.5));}
         if(stars>.01){float y=vUv.y;float ax=vUv.x*5.+time*.04;float yc=.74+.05*sin(ax*1.3+sin(ax*.6+time*.1)*2.);float band=exp(-pow((y-yc)*11.,2.))+.6*exp(-pow((y-yc-.07)*16.,2.));
           float cur=.55+.45*sin(vUv.x*38.+time*.7+sin(vUv.x*11.+time*.3)*3.);col+=mix(vec3(.15,1.,.55),vec3(.65,.3,1.),smoothstep(yc-.02,yc+.1,y))*band*cur*stars*.18;
-          float ph=time*.11;float k=floor(ph);float st=fract(ph);vec2 s0=vec2(fract(sin(k*12.9)*437.5)*.7+.2,.93-fract(sin(k*7.3)*91.1)*.12);vec2 dir=normalize(vec2(-.8,-.35));
-          vec2 q=(vUv-s0)*vec2(res.x/res.y,1.);float al=dot(q,dir);float pr=length(q-dir*al);float head=st/.08*.5;
-          if(st<.08){float tail=smoothstep(head-.14,head,al)*step(al,head);col+=vec3(1.,.95,.8)*tail*(1.-smoothstep(.0008,.003,pr))*stars*(1.-st/.08)*1.4;}}
+          col+=vec3(1.,.95,.82)*meteors(vUv,time,res.x/res.y)*stars*1.6;}
         vec2 g=gl_FragCoord.xy/(9.*dpr);vec2 f=fract(g)-.5;float r=length(f);col=mix(col,col*.86,(1.-smoothstep(.18,.24,r))*smoothstep(.45,1.,vUv.y));col=mix(col,vec3(.86,.88,.92),snowK);gl_FragColor=vec4(col,1.);return;}
       float dc=lin(d);float e=0.;float ce=0.;float lc=lum(col);
       for(int i=0;i<4;i++){vec2 o=i==0?vec2(px.x,0.):i==1?vec2(-px.x,0.):i==2?vec2(0.,px.y):vec2(0.,-px.y);
