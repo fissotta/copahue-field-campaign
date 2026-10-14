@@ -2237,6 +2237,7 @@ function updateModels(dt,t){
   M.forEach(m=>{const s=st(m.c);const b=m.b.userData;const on=!s.done;const nearFP=fpOn()&&Math.hypot(pl.x-m.ax,pl.z-m.az)<.3;b.beam.visible=on&&!nearFP;b.drop.visible=b.tip.visible=on&&!nearFP;b.ring.visible=!nearFP;b.ring.material.color.set(s.done?'#8ac926':m.col);
     b.drop.position.y=b.tip.position.y-.07;b.tip.position.y=.62+Math.sin(t*2.2+m.ax)*.05;b.mat.opacity=S.target===m?.5:.26;b.beam.scale.set(S.target===m?1.6:1,1,S.target===m?1.6:1);});
 }
+window.CFC_DRIVING=()=>mode==='play'&&pl.inTruck&&!EV.cine;   // la radio solo existe en modo conducción (camioneta/caballo/bici)
 window.__cfc=()=>({pl,cam,jy:pl.jy,inTruck:pl.inTruck,frozen:PK.freeze(),ctx:!!ctx,E:ctx&&ctx.E?String(ctx.E.t||ctx.E.n||Object.keys(ctx.E)):null,mode,modal:!!modal,fp:fpOn(),exit:()=>exitTruck()});
 pl.jy=0;pl.jv=0;pl.land=0;
 function doJump(){if(pl.inTruck||PK.freeze()||(WX&&WX.block)||pl.jy>.002)return;pl.jv=.5;try{AU.sfx.step('gravel');}catch(_){}}

@@ -118,9 +118,11 @@ function apply(on){const rt=W.rt;rt.dispose();rt.texture.type=on?T.HalfFloatType
   if(on){saved={sun:W.sun.intensity,hemi:W.hemi.intensity,sh:R.shadowMap.enabled,sht:R.shadowMap.type};REAL.shadows=W.GFX.level!=='low';R.shadowMap.enabled=REAL.shadows;R.shadowMap.type=T.PCFSoftShadowMap;W.sun.castShadow=REAL.shadows;
     if(REAL.shadows&&W.sun.shadow){W.sun.shadow.radius=3;W.sun.shadow.bias=-.0004;}
     sweep(W.scene);if(window.FPG&&FPG.scene)sweep(FPG.scene);(W.clouds||[]).forEach(c=>c.visible=false);envT=-99;
-    (W.steam||[]).forEach(s=>{if(!s.userData.m0){s.userData.m0=s.material.map;}s.material.map=softTex();s.material.color.set(0xe8e8e4);s.material.needsUpdate=true;});}
+    (W.steam||[]).forEach(s=>{if(!s.userData.m0){s.userData.m0=s.material.map;}s.material.map=softTex();s.material.color.set(0xe8e8e4);s.material.needsUpdate=true;});
+    (W.steamBatches||[]).forEach(b=>{b.mesh.material.uniforms.map.value=softTex();b.mesh.material.uniforms.color.value.set(0xe8e8e4);});}
   else{unsweep(W.scene);if(window.FPG&&FPG.scene)unsweep(FPG.scene);W.scene.environment=null;if(saved){R.shadowMap.enabled=saved.sh;R.shadowMap.type=saved.sht;W.sun.castShadow=saved.sh;}
-    (W.clouds||[]).forEach(c=>c.visible=true);(W.steam||[]).forEach(s=>{if(s.userData.m0){s.material.map=s.userData.m0;s.material.color.set(0xffffff);s.material.needsUpdate=true;}});}
+    (W.clouds||[]).forEach(c=>c.visible=true);(W.steam||[]).forEach(s=>{if(s.userData.m0){s.material.map=s.userData.m0;s.material.color.set(0xffffff);s.material.needsUpdate=true;}});
+    (W.steamBatches||[]).forEach(b=>{b.mesh.material.uniforms.map.value=b.map;b.mesh.material.uniforms.color.value.set(0xffffff);});}
   W.scene.traverse(o=>{if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true);});
   (W.waterMats||[]).concat(W.riverMats||[]).forEach(m=>{if(m.uniforms&&m.uniforms.realK)m.uniforms.realK.value=on?1:0;});if(!on)setRefl(0);
   label();}

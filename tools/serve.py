@@ -8,7 +8,7 @@ PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
 
 class H(http.server.SimpleHTTPRequestHandler):
     extensions_map = {**http.server.SimpleHTTPRequestHandler.extensions_map,
-                      '.webp': 'image/webp', '.mp3': 'audio/mpeg', '.js': 'text/javascript'}
+                      '.webp': 'image/webp', '.mp3': 'audio/mpeg', '.opus': 'audio/ogg', '.m4a': 'audio/mp4', '.js': 'text/javascript'}
     def __init__(self, *a, **k): super().__init__(*a, directory=ROOT, **k)
     def end_headers(self):
         self.send_header('Cache-Control', 'no-store'); self.send_header('Accept-Ranges', 'bytes')

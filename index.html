@@ -21,7 +21,8 @@ body:not(.hudm) #g-snd,body:not(.hudm) #gfx-btn,body:not(.hudm) #g-chr,body:not(
 #g-radio .g-btn{font-size:13px;padding:2px 7px;box-shadow:2px 2px 0 var(--ink);touch-action:manipulation}
 #rd-mix.on{background:var(--yel)}#g-radio .g-btn{font-size:12px;padding:2px 6px}
 #rd-vol{flex:1;min-width:0;height:14px;accent-color:var(--red)}
-body.cine #g-radio,body.explore #g-radio{display:none!important}
+#g-radio{display:none!important}
+body.driving:not(.cine):not(.explore) #g-radio{display:flex!important}  /* solo visible conduciendo */
 @media (max-width:760px){#g-radio{width:178px;left:auto;right:8px;bottom:auto;top:56px}}
 </style></head><body>
 <title>Copahue Field Campaign v8.21</title>

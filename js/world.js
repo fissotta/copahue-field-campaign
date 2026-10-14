@@ -434,6 +434,7 @@ function buildCars(){
         const fl=new THREE.Mesh(new THREE.BoxGeometry(.002,.014,.012),toon('#1d1a2b'));fl.position.set(w[0]-.026,.02,w[1]*1.02);g.add(fl);});
       const hd=new THREE.Mesh(new THREE.SphereGeometry(.011,8,6),toon(['#c99472','#e0ae8a','#9a6a48'][i%3]));hd.position.set(jeep?-.005:.022,jeep?.094:.089,.013);g.add(hd);
       const ht=new THREE.Mesh(new THREE.CylinderGeometry(.012,.013,.006,10),toon(['#1d1a2b','#8a5a33','#ff4f3a'][i%3]));ht.position.set(hd.position.x,hd.position.y+.009,hd.position.z);g.add(ht);}
+    Q.mergeStatic(g,[]);   // carrocería, ruedas, detalles y conductor en pocas mallas (~26 draw calls por auto -> ~4); las ruedas no giran
     const road=roadPaths[i%3===0?0:1];
     cars.push({g,road,t:rnd(),sp:(road===roadPaths[0]?.02:.006)*(rnd()>.5?1:-1)*(.7+rnd()*.6)});groups.life.add(g);
   }
@@ -529,13 +530,16 @@ function buildFauna(){
     F.dogs.forEach((dc,j)=>{const g=makeDog(dc);groups.life.add(g);animals.push({g,kind:'dog',x:F.c[0],z:F.c[1],hx:F.c[0],hz:F.c[1],a:j*3,sp:.45,R:.42,ph:j*3});});
   });
 }
+const FAUNA_CULL2=20*20;   // jugando: animales a >20 unidades de la cámara se ocultan (miden ~0,1 u: no se ven) y ahorran sus draw calls
 function updateFauna(t,dt){
+  const playing=!!(window.GAME&&GAME.active),cpx=camera.position.x,cpy=camera.position.y,cpz=camera.position.z;
   animals.forEach(A=>{
     if(A.kind==='dog'){A.a+=dt*A.sp/A.R;const x=A.hx+Math.cos(A.a)*A.R,z=A.hz+Math.sin(A.a)*A.R*.8;const hd=Math.atan2(z-A.z,x-A.x);A.x=x;A.z=z;A.g.rotation.y=-hd;A.g.userData.tail.rotation.x=Math.sin(t*20)*.5;}
     else{A.a+=(Math.sin(t*.7+A.ph)*.9)*dt*(A.kind==='fox'?1.6:.6);let x=A.x+Math.cos(A.a)*A.sp*dt,z=A.z+Math.sin(A.a)*A.sp*dt;
       if(Math.hypot(x-A.hx,z-A.hz)>A.R||!okGround(x,z)){A.a+=Math.PI*.7;x=A.x;z=A.z;}A.x=x;A.z=z;A.g.rotation.y=-A.a;}
     if(A.g.userData.legs){A.wk=(A.wk||0)+dt*(A.kind==='dog'?14:A.kind==='fox'?9:5);const sw=A.kind==='sheep'?.25:.45;A.g.userData.legs.forEach((L,k)=>L.rotation.z=Math.sin(A.wk+((k===0||k===3)?0:Math.PI))*sw);}
     const s=(window.GAME&&GAME.active)?1.5:clamp(SF*.9,.7,2.4);A.g.scale.setScalar(s);A.g.position.set(A.x,heightAt(A.x,A.z)+(A.kind==='sheep'?0:Math.abs(Math.sin(t*9+A.ph))*.004*s),A.z);
+    {const dx=A.x-cpx,dy=A.g.position.y-cpy,dz=A.z-cpz;A.g.visible=!playing||dx*dx+dy*dy+dz*dz<FAUNA_CULL2;}
   });
 }
 
@@ -752,6 +756,33 @@ function openInfo(o){
 
 // clouds, steam, condors
 const clouds=[],steam=[],birds=[];
+// ---- vapor: UN solo billboard instanciado por textura en vez de un Sprite (= 1 draw call) por bocanada (~245 -> 2 llamadas).
+// Los Sprites de `steam` siguen existiendo como "datos" (posición/escala/opacidad que calcula animate), pero se ocultan.
+const steamBatches=[];let steamN=-1;
+function steamBatchRebuild(){
+  steamBatches.forEach(b=>{groups.life.remove(b.mesh);b.mesh.geometry.dispose();b.mesh.material.dispose();});steamBatches.length=0;
+  const by=new Map();
+  steam.forEach(sp=>{sp.visible=false;const m=sp.userData.m0||sp.material.map;let b=by.get(m);if(!b){b={map:m,list:[]};by.set(m,b);}b.list.push(sp);});
+  by.forEach(b=>{const n=b.list.length;
+    const g=new THREE.InstancedBufferGeometry().copy(new THREE.PlaneGeometry(1,1));g.instanceCount=n;
+    b.D=new Float32Array(n*4);b.O=new Float32Array(n);b.d=new Float32Array(n);b.ix=Array.from({length:n},(_,i)=>i);
+    b.aD=new THREE.InstancedBufferAttribute(b.D,4).setUsage(THREE.DynamicDrawUsage);b.aO=new THREE.InstancedBufferAttribute(b.O,1).setUsage(THREE.DynamicDrawUsage);
+    g.setAttribute('iD',b.aD);g.setAttribute('iO',b.aO);
+    const mat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{map:{value:b.map},color:{value:new THREE.Color(0xffffff)}},
+      vertexShader:'attribute vec4 iD;attribute float iO;varying vec2 vUv;varying float vO;void main(){vUv=uv;vO=iO;vec4 mv=modelViewMatrix*vec4(iD.xyz,1.0);mv.xy+=position.xy*iD.w;gl_Position=projectionMatrix*mv;}',
+      fragmentShader:'uniform sampler2D map;uniform vec3 color;varying vec2 vUv;varying float vO;void main(){vec4 t=texture2D(map,vUv);gl_FragColor=vec4(color*t.rgb,t.a*vO);}'});
+    b.mesh=new THREE.Mesh(g,mat);b.mesh.frustumCulled=false;b.mesh.name='steamBatch';groups.life.add(b.mesh);steamBatches.push(b);});
+  steamN=steam.length;
+}
+function steamBatchUpdate(){
+  if(steamN!==steam.length)steamBatchRebuild();
+  const cp=camera.position;
+  steamBatches.forEach(b=>{const L=b.list,n=L.length,ix=b.ix,d=b.d;
+    for(let i=0;i<n;i++){const p=L[i].position,dx=p.x-cp.x,dy=p.y-cp.y,dz=p.z-cp.z;d[i]=dx*dx+dy*dy+dz*dz;}
+    ix.sort((a,c)=>d[c]-d[a]);   // de lejos a cerca, como hacía el orden de transparencias de los Sprites
+    for(let k=0;k<n;k++){const sp=L[ix[k]],p=sp.position;b.D[k*4]=p.x;b.D[k*4+1]=p.y;b.D[k*4+2]=p.z;b.D[k*4+3]=sp.scale.x;b.O[k]=sp.material.opacity;}
+    b.aD.needsUpdate=true;b.aO.needsUpdate=true;});
+}
 function buildLife(){
   const cm=toon('#ffffff');
   for(let i=0;i<14;i++){const g=new THREE.Group();const n=4+Math.floor(rnd()*4);
@@ -1343,6 +1374,7 @@ function animate(){
   if(groups.life.visible){
     clouds.forEach(c=>{c.position.x+=c.userData.sp*dt;if(c.position.x>X1+4)c.position.x=X0-4;c.visible=!(window.REAL&&REAL.on)&&c.position.distanceTo(camera.position)>6&&camera.position.y<c.position.y-1.5;});
     steam.forEach(s=>{const u=s.userData;const ph=(t*.28+u.ph)%1;s.position.set(u.x+Math.sin(ph*5+u.ph*9)*.12,u.y+.1+ph*1.6*u.sz,u.z);const sc=(.08+ph*.4)*u.sz*clamp(SF,.5,1.6);s.scale.set(sc,sc,1);s.material.opacity=.95*(1-ph);});
+    steamBatchUpdate();
     updateFauna(t,dt);updateCaniche(t);
     cars.forEach(c=>{c.t=(c.t+c.sp*dt+1)%1;const p=c.road.getPointAt(c.t),q=c.road.getPointAt((c.t+.002*Math.sign(c.sp)+1)%1);c.g.position.copy(p);c.g.lookAt(q);c.g.rotateY(-Math.PI/2);c.g.scale.setScalar(GA?2.2:clamp(SF,.7,2.4));});
     birds.forEach(b=>{const u=b.userData;const a=t*u.sp+u.ph;b.position.set(u.c[0]+Math.cos(a)*u.r,u.h+Math.sin(t*.7+u.ph)*.3,u.c[1]+Math.sin(a)*u.r);b.rotation.y=-a;b.rotation.z=.25;
@@ -1365,7 +1397,7 @@ function boot(){
   {const gb=document.getElementById('gfx-btn');if(gb)gb.onclick=cycleGfx;addEventListener('keydown',e=>{if(e.code==='KeyG'&&!/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||''))cycleGfx();});}
   const ld=document.getElementById('loader');ld.style.opacity=0;setTimeout(()=>ld.remove(),600);
   animate();
-  window.WORLD={animals,birds,lakeSdf,los,losCached,rt,get terrain(){return terrain;},clouds,waterMats,riverMats,Q,steam,get TREELIST(){return window.TREELIST||[];},phColor,GFX,cycleGfx,WIND,winMat,LAKES,hemi,sun,postMat,scene,camera,controls,renderer,heightAt,infoAt,P,Y,SITES,byCode,LAKES,lakeSdf,nearestRiver,roadPaths,RIVERS,groups,toon,gradTex,TAXA,SMP,FIELD,PHOTOS,X0,X1,Z0,Z1,CRATER,VOLC,get caniche(){return caniche},gcol,HAB,phColor,rgbCss,layerOn,applyLayers};
+  window.WORLD={animals,birds,lakeSdf,los,losCached,rt,get terrain(){return terrain;},clouds,waterMats,riverMats,Q,steam,steamBatches,get TREELIST(){return window.TREELIST||[];},phColor,GFX,cycleGfx,WIND,winMat,LAKES,hemi,sun,postMat,scene,camera,controls,renderer,heightAt,infoAt,P,Y,SITES,byCode,LAKES,lakeSdf,nearestRiver,roadPaths,RIVERS,groups,toon,gradTex,TAXA,SMP,FIELD,PHOTOS,X0,X1,Z0,Z1,CRATER,VOLC,get caniche(){return caniche},gcol,HAB,phColor,rgbCss,layerOn,applyLayers};
   if(window.onWorldReady)window.onWorldReady();
   window.__ready=true;window.__cam=()=>{if(caniche){tween=null;controls.target.copy(caniche.position);camera.position.copy(caniche.position).add(new THREE.Vector3(.5,.35,.5));}};window.__look=(lat,lon,d,pol)=>{const q=P(lat,lon);flyTo(new THREE.Vector3(q[0],heightAt(q[0],q[1]),q[1]),d,pol,.01);};window.__dbg=()=>({photos:photoSprites.length,vis:groups.photos.visible,sp:photoSprites.slice(0,2).map(p=>[p.position.toArray(),p.scale.toArray()])});
 }

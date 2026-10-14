@@ -64,3 +64,17 @@ Copia local de la v7 (Sandbox v7 Copy). La v7 original no se toca.
 - Ángulos de cine para sismo, erupción y llegada a la base.
 - Mejora visual (cielo, agua, vegetación, post-proceso) con tope 1080p.
 - Pruebas en M5 Air y NVIDIA.
+
+## v8.23 — radio solo en modo conducción (14 oct 2026)
+- La radio Copahue FM ahora **solo aparece y suena mientras conduces** (camioneta, caballo o bicicleta). A pie, en cinemáticas, en exploración y en el título no se ve ni suena; las teclas T , . I tampoco hacen nada fuera de conducción.
+- Si estaba sonando y te bajas, se pausa; al volver a subir retoma sola. Si la pausaste tú, queda pausada.
+- Implementación: `window.CFC_DRIVING()` (game.js) → `radio.js` pone la clase `body.driving`; el CSS oculta `#g-radio` salvo con esa clase.
+- Respaldo previo: `SYSTEM/NEw/_respaldos/copahue-v8_antes-radio-solo-conduccion/`. Sin commit aún.
+
+## v8.24 — audio liviano + menos draw calls (14 oct 2026)
+- **Audio**: los 9 mp3 (30 MB) pasaron a **Opus 64 kbps** (`music/*.opus`, 11 MB) con copia **AAC 96 kbps** (`music/*.m4a`, 16 MB) que solo se usa si el navegador no lee Opus (Safari antiguo). Nunca se descargan los dos: `radio.js` elige por `canPlayType`. Nombres sin tildes/espacios (slug). **Canción nueva**: "Copahue No Te Caigas".
+- **Carga diferida**: ningún audio se baja hasta que subes a un vehículo y pulsas ▶/T; solo se descarga la pista actual.
+- Agregar una canción: `ffmpeg -i x.mp3 -vn -map_metadata -1 -c:a libopus -b:a 64k -vbr on -application audio music/x.opus` y `ffmpeg -i x.mp3 -vn -map_metadata -1 -c:a aac -b:a 96k -movflags +faststart music/x.m4a`, y sumar `{"f":"x","t":"Título"}` a `TRACKS` en `radio.js`. `tools/serve.py` ya conoce `.opus` y `.m4a`.
+- **Draw calls** (`world.js`, `real.js`): (1) el vapor de las 28 fumarolas (~245 Sprites = 245 llamadas) ahora es 2 mallas instanciadas (verificado pixel a pixel contra los Sprites: 0 píxeles distintos); funciona también en modo real; (2) los 4 autos de la ruta se fusionan (~26 → ~4 llamadas cada uno); (3) jugando, los animales a >20 unidades no se dibujan. Medido en la prueba (GPU por software): inicio 512 → ~446 llamadas; en el campo de solfataras 382→247, 481→343, 760→630 según hacia dónde se mire.
+- **Pendiente (siguiente mayor ahorro)**: cada persona cuesta ~26 llamadas (piernas/brazos/guantes/accesorios sin fusionar). Fusionar sus sub-mallas daría ~6–10 menos por persona, pero toca guantes, bidón y sonda; hacerlo con cuidado.
+- Respaldo previo: `SYSTEM/NEw/_respaldos/copahue-v8_antes-audio-opus-drawcalls/` (incluye los mp3 originales). Sin commit aún.
