@@ -26,7 +26,7 @@ els.vol.value=Math.round(vol*100);
 const SEG=()=>50+Math.random()*20;                       // ~1 min per cut in Remix mode
 const EXT=(()=>{try{const t=document.createElement('audio');if(t.canPlayType('audio/ogg; codecs="opus"')||t.canPlayType('audio/webm; codecs="opus"'))return 'opus';}catch(e){}return 'm4a';})();
 const url=i=>'music/'+TRACKS[i].f+'.'+EXT;
-const driving=()=>{try{return !!(window.CFC_DRIVING&&window.CFC_DRIVING());}catch(e){return false;}};
+const driving=()=>{try{if(window.CFC_DRIVING)return !!window.CFC_DRIVING();if(window.__cfc){const c=window.__cfc();return !!(c&&c.inTruck&&!c.frozen);}}catch(e){}return false;};   // respaldo por si el navegador conserva un game.js antiguo en caché
 const lvl=()=>{try{return (typeof AU!=='undefined')?AU.level:2;}catch(e){return 2;}};
 function applyVol(g){a.volume=Math.min(1,Math.max(0,vol*(g==null?1:g)));a.muted=lvl()===0;}
 function nextIdx(){

@@ -5,6 +5,7 @@ const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t;
 const angLerp=(a,b,t)=>{let d=((b-a+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;return a+d*t;};
 const GAME={active:false,tick(){} };window.GAME=GAME;
+const GAME_VERSION='v8.24 · 14 oct 2026';window.GAME_VERSION=GAME_VERSION;   // se muestra en la pantalla de título y en la ayuda (H)
 let Wd=null;
 window.onWorldReady=()=>{Wd=window.WORLD;try{init();}catch(e){console.error(e);}try{xaInit();}catch(e){console.error('xaInit',e);}};
 
@@ -2732,7 +2733,7 @@ function showTitle(){
    <div class="ctl" style="margin-top:8px"><kbd>W A S D</kbd><span>drive / walk (arrows work too)</span><kbd>E</kbd><span>interact · hold to fill the jerrycan</span><kbd>Q</kbd><span>multiparameter probe</span><kbd>SPACE</kbd><span>pump / lower probe in the mini-games</span><kbd>SHIFT</kbd><span>jog (not while carrying water)</span><kbd>M</kbd><span>map view · <kbd>SHIFT+M</kbd> flying info map (🗺️) · <kbd>N</kbd> next target · <kbd>J</kbd> mission list</span><kbd>P</kbd><span>switch scientist (or the 👤 button)</span><kbd>U</kbd><span>sound: music + SFX / SFX only / off · <kbd>B</kbd> honk</span><kbd>🖱️</kbd><span>drag to look around · wheel to zoom</span></div></div></div>
    <div class="g-row"><button class="g-btn y" id="g-new" style="font-size:24px">▶ NEW CAMPAIGN</button><button class="g-btn" id="g-hof" style="font-size:24px">🏆 HALL OF FAME</button><button class="g-btn" id="g-tlang" style="font-size:20px">🌐 ESPAÑOL / ENGLISH</button>${sv&&Object.keys(sv.sites||{}).length?`<button class="g-btn t" id="g-cont" style="font-size:24px">↻ CONTINUE (${(sv.samples||[]).length} samples)</button>`:''}</div>
    <p class="note">Terrain, rivers, sites, probe readings (Metadata.xlsx) and metagenome results (2019 campaign, thesis data) are real; the mini-game mechanics and DNA yields are simulated.</p>
-   <p class="note" id="g-ver" style="text-align:right;opacity:.55;margin-top:2px">v8.24 · 14 oct 2026</p>`,
+   <p class="note" id="g-ver" style="text-align:right;opacity:.55;margin-top:2px">${GAME_VERSION}</p>`,
    init(){const im=$('#g-tImg');if(window.WORLD&&Wd.PHOTOS&&Wd.PHOTOS.VIEW)im.src=Wd.PHOTOS.VIEW;else im.parentNode.style.display='none';
      $('#g-hof').onclick=()=>{const back=()=>setTimeout(showTitle,0);openHall();const o=modal;o.onclose=((f)=>()=>{f&&f();back();})(o.onclose);};
      $('#g-tlang').onclick=()=>setLang(LANG==='es'?'en':'es');
@@ -2785,7 +2786,8 @@ function showHelp(){if(modal&&modal.help){closeModal();return;}
  <li>${LX('At the beacon <b>hold</b> <kbd>E</kbd> to fill the 10 L jerrycan, walk to the station (truck tailgate or kit) and press <kbd>E</kbd> to pour. Twice → 20 L.','En la baliza <b>mantén</b> <kbd>E</kbd> para llenar el bidón de 10 L, camina a la estación (pick-up o kit) y pulsa <kbd>E</kbd> para vaciarlo. Dos veces → 20 L.')}</li>
  <li>${LX('At the beacon press <kbd>Q</kbd>: lower the probe with <kbd>SPACE</kbd>, keep it in the green depth band until readings stabilise, then <b>RECORD</b>.','En la baliza pulsa <kbd>Q</kbd>: baja la sonda con <kbd>ESPACIO</kbd>, mantenla en la franja verde hasta que se estabilice y <b>REGISTRA</b>.')}</li>
  <li>${LX('At the station press <kbd>E</kbd>: hold <kbd>SPACE</kbd> to pump, keep the vacuum gauge in the green. Swap clogged membranes <kbd>R</kbd>, empty the flask <kbd>F</kbd>. 20 L through 0.45 µm, then the filtrate through 0.22 µm.','En la estación pulsa <kbd>E</kbd>: mantén <kbd>ESPACIO</kbd> para bombear con el vacío en verde. Cambia membranas tapadas con <kbd>R</kbd>, vacía el matraz con <kbd>F</kbd>. 20 L por 0,45 µm y luego el filtrado por 0,22 µm.')}</li>
- <li>${LX('Back at the <b>MEL Field Base</b> (Caviahue): extract DNA, build libraries and sequence on the Illumina.','De vuelta en la <b>Base MEL</b> (Caviahue): extrae ADN, prepara librerías y secuencia en el Illumina.')}</li></ol></div>`});}
+ <li>${LX('Back at the <b>MEL Field Base</b> (Caviahue): extract DNA, build libraries and sequence on the Illumina.','De vuelta en la <b>Base MEL</b> (Caviahue): extrae ADN, prepara librerías y secuencia en el Illumina.')}</li></ol></div>
+ <div style="text-align:right;font-size:11px;opacity:.55;margin-top:6px">Copahue Field Campaign ${GAME_VERSION}</div>`});}
 
 // ------------------------------------------------------------ PROBE mini-game
 function openProbe(m){
