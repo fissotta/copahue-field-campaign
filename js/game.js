@@ -5,7 +5,7 @@ const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t;
 const angLerp=(a,b,t)=>{let d=((b-a+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;return a+d*t;};
 const GAME={active:false,tick(){} };window.GAME=GAME;
-const GAME_VERSION='v8.24 · 14 oct 2026';window.GAME_VERSION=GAME_VERSION;   // se muestra en la pantalla de título y en la ayuda (H)
+const GAME_VERSION='v8.25 · 15 oct 2026';window.GAME_VERSION=GAME_VERSION;   // se muestra en la pantalla de título y en la ayuda (H)
 let Wd=null;
 window.onWorldReady=()=>{Wd=window.WORLD;try{init();}catch(e){console.error(e);}try{xaInit();}catch(e){console.error('xaInit',e);}};
 
@@ -2838,7 +2838,7 @@ function openProbe(m){
 function openFilter(m,where){
   const turb=(m.smp&&m.smp.v['Turb.FNU'])||5;
   const pw=PK.is('tito')||PK.is('priscilla');const ST=[{pore:'0.45 µm',frac:'particle-attached fraction',clogL:pw?0:Math.max(.075,.02+turb/9000),col:'#ff9f1c'},{pore:'0.22 µm',frac:'free-living fraction',clogL:pw?0:Math.max(.07,.03+turb/60000),col:'#3a86ff'}];
-  let si=0,vac=0,clog=0,vol=0,flask=0,memb=[1,0],rupt=0,swapNeeded=false,over=0,tt=0,fin=false;const FL=10;
+  const FILT_SPEED=1.5;let si=0,vac=0,clog=0,vol=0,flask=0,memb=[1,0],rupt=0,swapNeeded=false,over=0,tt=0,fin=false;const FL=10;
   openModal({field:true,fp3d:'filter',fpSite:m,title:'DIFFERENTIAL VACUUM FILTRATION',meta:`${m.c.replace('_','–')} · ${m.en} · ${where==='truck'?(LANG==='es'?'bomba eléctrica en la pickup':'electric pump at the truck tailgate'):(LANG==='es'?'bomba de vacío manual (kit portátil)':'hand vacuum pump (portable kit)')} · turbidity ${fmtV(turb,1)} FNU`,col:'#00bbf9',html:`
    <div class="steps"><span id="fs0" class="on">1 · 0.45 µm — particle-attached</span><span id="fs1">2 · 0.22 µm — free-living</span><span id="fs2">3 · store membranes</span></div>
    <div class="g-grid"><div>
@@ -2884,7 +2884,7 @@ function openFilter(m,where){
      if(vac>.84&&!swapNeeded){over+=dt;if(over>.25){rupt++;S.score=Math.max(0,S.score-15);swapNeeded=true;vac=0;AU.sfx.tear();toast('💥 RIIIP! Too much vacuum — the membrane tore. Swap it (R) and pump gently.',true,3000);vol=Math.max(0,vol-1);}}else over=0;
      if(PK.is('simon')&&!swapNeeded&&K('Space')&&vol>1&&Math.random()<dt*.09){rupt++;S.score=Math.max(0,S.score-15);swapNeeded=true;vac=0;vol=Math.max(0,vol-1);AU.sfx.tear();toast(LX((a=>a[Math.floor(Math.random()*a.length)])(['💥 CRASH! Simón elbowed the filter holder and cracked the glass funnel. New membrane (R)!','💥 CRACK! Simón dropped the forceps right through the membrane. Swap it (R)!','💥 CLINK! Simón knocked the Kitasato flask over. Clean up and put a new membrane (R).']),(a=>a[Math.floor(Math.random()*a.length)])(['💥 ¡CRASH! Simón le pegó con el codo al portafiltro y quebró el embudo de vidrio. ¡Membrana nueva (R)!','💥 ¡CRACK! A Simón se le cayó la pinza justo encima de la membrana. ¡Cámbiala (R)!','💥 ¡CLINK! Simón botó el matraz Kitasato. Limpia y pon una membrana nueva (R).'])),true,3800);}
      let q=0;
-     if(!swapNeeded&&flask<FL){q=Math.max(0,vac-.12)*3.4*Math.pow(1-clog,1.2)*((PK.is('tito')||PK.is('priscilla'))?4:1);q=Math.min(q,(VOL-vol)/Math.max(dt,1e-3)+.01,(FL-flask)/Math.max(dt,1e-3));}
+     if(!swapNeeded&&flask<FL){q=Math.max(0,vac-.12)*3.4*FILT_SPEED*Math.pow(1-clog,1.2)*((PK.is('tito')||PK.is('priscilla'))?4:1);q=Math.min(q,(VOL-vol)/Math.max(dt,1e-3)+.01,(FL-flask)/Math.max(dt,1e-3));}
      AUX.gurgle=q>.05;vol+=q*dt;flask+=q*dt;if(VOL-vol<.03&&q>0)vol=VOL;clog=clamp(clog+S2.clogL*q*dt,0,1);
      if(swapNeeded)warn='TORN MEMBRANE — SWAP (R)';else if(clog>.92)warn='MEMBRANE CLOGGED — SWAP (R)';else if(flask>=FL-.01)warn='FLASK FULL — EMPTY IT (F)';else if(vac>.7)warn='TOO MUCH VACUUM!';else if(clog>.6)warn='flow dropping — swap soon (R)';else if(vac<.35&&K('Space'))warn='building vacuum…';
      if(vol>=VOL-1e-6&&!swapNeeded){ // stage complete

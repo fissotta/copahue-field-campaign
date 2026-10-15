@@ -79,3 +79,6 @@ Copia local de la v7 (Sandbox v7 Copy). La v7 original no se toca.
 - **Pendiente (siguiente mayor ahorro)**: cada persona cuesta ~26 llamadas (piernas/brazos/guantes/accesorios sin fusionar). Fusionar sus sub-mallas daría ~6–10 menos por persona, pero toca guantes, bidón y sonda; hacerlo con cuidado.
 - Respaldo previo: `SYSTEM/NEw/_respaldos/copahue-v8_antes-audio-opus-drawcalls/` (incluye los mp3 originales). Sin commit aún.
 - v8.24 (ajuste): la versión se ve en la pantalla de título y al final de la ayuda (H); se define una sola vez en `GAME_VERSION` (game.js) y en `<title>` de index.html. Los scripts de index.html llevan `?v=824` (subir el número al publicar, evita que el navegador mezcle archivos viejos y nuevos de la caché). La radio tiene respaldo si el `game.js` en caché es antiguo.
+
+## v8.25 (15 oct 2026)
+- Filtración al vacío 1.5× más rápida: el caudal (`q`) se multiplica por `FILT_SPEED=1.5` en js/game.js. El taponamiento sigue siendo por litro, así que la dificultad por litro no cambia; solo se completa en 2/3 del tiempo. Para ajustar: cambiar `FILT_SPEED`.
